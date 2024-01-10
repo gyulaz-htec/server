@@ -107,3 +107,9 @@ add_subdirectory(query_backend query_backend)
 if(${TRITON_ENABLE_GPU})
   add_subdirectory(sequence sequence)
 endif()
+
+if(${TRITON_ENABLE_ROCM})
+  add_subdirectory(sequence sequence)
+  add_subdirectory(implicit_state implicit_state)
+endif()
+

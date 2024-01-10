@@ -68,6 +68,13 @@ if(${TRITON_ENABLE_GPU})
   message(STATUS "Using CUDA ${CUDA_VERSION}")
 endif() # TRITON_ENABLE_GPU
 
+# ROCM
+#
+if(${TRITON_ENABLE_ROCM})
+  find_package(HIPToolkit REQUIRED)
+  message(STATUS "Using ROCM ${ROCM_VERSION}")
+endif() # TRITON_ENABLE_ROCM
+
 # libevent
 #
 if(${TRITON_ENABLE_HTTP} OR ${TRITON_ENABLE_METRICS} OR
@@ -182,6 +189,20 @@ if(${TRITON_ENABLE_GPU})
       CUDA::cudart
   )
 endif() # TRITON_ENABLE_GPU
+
+if(${TRITON_ENABLE_ROCM})
+  target_compile_definitions(
+    main
+    PRIVATE TRITON_ENABLE_ROCM=1
+    PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+  )
+
+  target_link_libraries(
+    main
+    PRIVATE
+      ROCM::hiprt
+  )
+endif() # TRITON_ENABLE_ROCM
 
 if(${TRITON_ENABLE_HTTP} OR ${TRITON_ENABLE_METRICS} OR
     ${TRITON_ENABLE_SAGEMAKER} OR ${TRITON_ENABLE_VERTEX_AI})
@@ -415,6 +436,20 @@ if(${TRITON_ENABLE_HTTP}
     )
   endif() # TRITON_ENABLE_GPU
 
+  if(${TRITON_ENABLE_ROCM})
+    target_compile_definitions(
+      http-endpoint-library
+      PRIVATE TRITON_ENABLE_ROCM=1
+      PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+    )
+
+    target_link_libraries(
+      http-endpoint-library
+      PUBLIC
+        ROCM::hiprt
+    )
+  endif() # TRITON_ENABLE_ROCM
+
   if(${TRITON_ENABLE_HTTP})
     target_compile_definitions(
       http-endpoint-library
@@ -548,6 +583,21 @@ if(${TRITON_ENABLE_TRACING})
     )
   endif() # TRITON_ENABLE_GPU
 
+  if(${TRITON_ENABLE_ROCM})
+    target_compile_definitions(
+      tracing-library
+      PRIVATE TRITON_ENABLE_ROCM=1
+      PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+    )
+
+    target_link_libraries(
+      tracing-library
+      PUBLIC
+        rocm::hiprt
+    )
+  endif() # TRITON_ENABLE_ROCM
+
+
   if(${TRITON_ENABLE_METRICS})
     target_compile_definitions(
       tracing-library
@@ -643,6 +693,21 @@ if (NOT WIN32)
     )
   endif() # TRITON_ENABLE_GPU
 
+  if(${TRITON_ENABLE_ROCM})
+    target_compile_definitions(
+      simple
+      PRIVATE TRITON_ENABLE_ROCM=1
+      PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+    )
+
+    target_link_libraries(
+      simple
+      PRIVATE
+        ROCM::hiprt
+    )
+  endif() # TRITON_ENABLE_ROCM
+
+
   install(
     TARGETS simple
     RUNTIME DESTINATION bin
@@ -707,6 +772,20 @@ if (NOT WIN32)
     )
   endif() # TRITON_ENABLE_GPU
 
+  if(${TRITON_ENABLE_RPC<})
+    target_compile_definitions(
+      multi_server
+      PRIVATE TRITON_ENABLE_ROCM=1
+      PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+    )
+
+    target_link_libraries(
+      multi_server
+      PRIVATE
+        ROCM::hiprt
+    )
+  endif() # TRITON_ENABLE_ROCM
+
   install(
     TARGETS multi_server
     RUNTIME DESTINATION bin
@@ -770,6 +849,66 @@ if (NOT WIN32)
       RUNTIME DESTINATION bin
     )
   endif() # TRITON_ENABLE_GPU
+
+  if(${TRITON_ENABLE_ROCM})
+    #
+    # memory_alloc example
+    #
+    add_executable(
+      memory_alloc
+      memory_alloc.cc
+    )
+
+    target_compile_features(memory_alloc PRIVATE cxx_std_11)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+      message("Using MSVC as compiler, default target on Windows 10. "
+              "If the target system is not Windows 10, please update _WIN32_WINNT "
+              "to corresponding value.")
+      target_compile_options(
+        memory_alloc
+        PRIVATE
+          /W1 /D_WIN32_WINNT=0x0A00 /EHsc
+      )
+    else()
+      target_compile_options(
+        memory_alloc
+        PRIVATE
+          -Wall -Wextra -Wno-type-limits -Wno-unused-parameter -Wno-deprecated-declarations -Werror
+      )
+    endif()
+
+    set_target_properties(
+      memory_alloc
+      PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        SKIP_BUILD_RPATH TRUE
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+        INSTALL_RPATH ""
+    )
+
+    target_compile_definitions(
+      memory_alloc
+      PRIVATE TRITON_ENABLE_ROCM=1
+      PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+    )
+
+    target_link_libraries(
+      memory_alloc
+      PRIVATE
+        triton-common-async-work-queue  # from repo-common
+        triton-common-error             # from repo-common
+        triton-core-serverapi           # from repo-core
+        triton-core-serverstub          # from repo-core
+        ROCM::hiprt
+      )
+
+    install(
+      TARGETS memory_alloc
+      RUNTIME DESTINATION bin
+    )
+  endif() # TRITON_ENABLE_ROCM
+
 endif() # NOT WIN32
 
 # Currently unit tests do not build for windows...
