@@ -70,15 +70,17 @@ import requests
 # incorrectly load the other version of the openvino libraries.
 #
 TRITON_VERSION_MAP = {
-    "2.42.0dev": (
-        "24.01dev",  # triton container
-        "23.12",  # upstream container
-        "1.16.3",  # ORT
+    "2.41.0dev": (
+        "23.12dev",  # triton container
+        "23.10",  # upstream container
+        "main",  # ORT
         "2023.0.0",  # ORT OpenVINO
         "2023.0.0",  # Standalone OpenVINO
         "3.2.6",  # DCGM version
         "py310_23.1.0-1",  # Conda version
-        "0.2.3",  # vLLM version
+        "0.2.1.post1",  # vLLM version
+        "6.0", #ROCm Version
+        "rocm-6.0.0", #MIGraphX Version Tags
     )
 }
 
@@ -460,6 +462,7 @@ def core_cmake_args(components, backends, cmake_dir, install_dir):
     cargs.append(cmake_core_enable("TRITON_ENABLE_NVTX", FLAGS.enable_nvtx))
 
     cargs.append(cmake_core_enable("TRITON_ENABLE_GPU", FLAGS.enable_gpu))
+    cargs.append(cmake_core_enable("TRITON_ENABLE_ROCM", FLAGS.enable_rocm))
     cargs.append(
         cmake_core_arg(
             "TRITON_MIN_COMPUTE_CAPABILITY", None, FLAGS.min_compute_capability
@@ -508,6 +511,7 @@ def repoagent_cmake_args(images, components, ra, install_dir):
     ]
 
     cargs.append(cmake_repoagent_enable("TRITON_ENABLE_GPU", FLAGS.enable_gpu))
+    cargs.append(cmake_repoagent_enable("TRITON_ENABLE_ROCM", FLAGS.enable_rocm))
     cargs += cmake_repoagent_extra_args()
     cargs.append("..")
     return cargs
@@ -529,6 +533,7 @@ def cache_cmake_args(images, components, cache, install_dir):
     ]
 
     cargs.append(cmake_cache_enable("TRITON_ENABLE_GPU", FLAGS.enable_gpu))
+    cargs.append(cmake_cache_enable("TRITON_ENABLE_ROCM", FLAGS.enable_rocm))
     cargs += cmake_cache_extra_args()
     cargs.append("..")
     return cargs
@@ -579,6 +584,7 @@ def backend_cmake_args(images, components, be, install_dir, library_paths):
     ]
 
     cargs.append(cmake_backend_enable(be, "TRITON_ENABLE_GPU", FLAGS.enable_gpu))
+    cargs.append(cmake_backend_enable(be, "TRITON_ENABLE_ROCM", FLAGS.enable_rocm))
     cargs.append(
         cmake_backend_enable(be, "TRITON_ENABLE_MALI_GPU", FLAGS.enable_mali_gpu)
     )
@@ -599,7 +605,7 @@ def backend_cmake_args(images, components, be, install_dir, library_paths):
             "Warning: Detected iGPU build, backend utility 'device memory tracker' will be disabled as iGPU doesn't contain required version of the library."
         )
         cargs.append(cmake_backend_enable(be, "TRITON_ENABLE_MEMORY_TRACKER", False))
-    elif FLAGS.enable_gpu:
+    elif FLAGS.enable_gpu or FLAGS.enable_rocm:
         cargs.append(cmake_backend_enable(be, "TRITON_ENABLE_MEMORY_TRACKER", True))
 
     cargs += cmake_backend_extra_args(be)
@@ -648,12 +654,47 @@ def onnxruntime_cmake_args(images, library_paths):
             )
         )
 
-    if target_platform() == "windows":
-        if "base" in images:
-            cargs.append(
-                cmake_backend_arg(
-                    "onnxruntime", "TRITON_BUILD_CONTAINER", None, images["base"]
-                )
+    if FLAGS.enable_rocm:
+        cargs.append(
+            cmake_backend_enable(
+                "onnxruntime", "TRITON_ENABLE_ONNXRUNTIME_ROCM", True
+            ),
+        )
+        cargs.append(
+            cmake_backend_enable(
+                "onnxruntime", "TRITON_ENABLE_ONNXRUNTIME_MIGRAPHX", True
+            )
+        )
+        cargs.append(
+            cmake_backend_arg(
+            "onnxruntime",
+            "TRITON_BUILD_ROCM_VERSION",
+            None,
+            TRITON_VERSION_MAP[FLAGS.version][8],
+            )
+        )
+        cargs.append(   
+            cmake_backend_arg(
+            "onnxruntime",
+            "TRITON_BUILD_ROCM_HOME",
+            None,
+           "/opt/rocm/",
+            )
+        )
+        cargs.append(
+            cmake_backend_arg(
+            "onnxruntime",
+            "TRITON_BUILD_MIGRAPHX_VERSION",
+            None,
+            TRITON_VERSION_MAP[FLAGS.version][9],
+            )
+        )
+
+    # If platform is jetpack do not use docker based build
+    if target_platform() == "jetpack":
+        if "onnxruntime" not in library_paths:
+            raise Exception(
+                "Must specify library path for onnxruntime using --library-paths=onnxruntime:<path_to_onnxruntime>"
             )
     else:
         if "base" in images:
@@ -1084,7 +1125,7 @@ FROM ${BASE_IMAGE}
 """
 
     df += dockerfile_prepare_container_linux(
-        argmap, backends, FLAGS.enable_gpu, target_machine()
+        argmap, backends, FLAGS.enable_gpu, FLAGS.enable_rocm, target_machine()
     )
 
     df += """
@@ -1139,8 +1180,8 @@ ENV LD_LIBRARY_PATH=/usr/local/tensorrt/lib/:/opt/tritonserver/backends/tensorrt
         dfile.write(df)
 
 
-def dockerfile_prepare_container_linux(argmap, backends, enable_gpu, target_machine):
-    gpu_enabled = 1 if enable_gpu else 0
+def dockerfile_prepare_container_linux(argmap, backends, enable_gpu, enable_rocm, target_machine):
+    gpu_enabled = 1 if (enable_gpu or enable_rocm) else 0
     # Common steps to produce docker images shared by build.py and compose.py.
     # Sets environment variables, installs dependencies and adds entrypoint
     df = """
@@ -1430,7 +1471,7 @@ def create_build_dockerfiles(
         base_image = images["base"]
     elif target_platform() == "windows":
         base_image = "mcr.microsoft.com/dotnet/framework/sdk:4.8"
-    elif FLAGS.enable_gpu:
+    elif FLAGS.enable_gpu or FLAGS.enable_rocm:
         base_image = "nvcr.io/nvidia/tritonserver:{}-py3-min".format(
             FLAGS.upstream_container_version
         )
@@ -2011,6 +2052,8 @@ def enable_all():
             "openvino",
             "fil",
             "tensorrt",
+            "rocm",
+            "migraphx",
         ]
         all_repoagents = ["checksum"]
         all_caches = ["local", "redis"]
@@ -2025,6 +2068,7 @@ def enable_all():
         FLAGS.enable_tracing = True
         FLAGS.enable_nvtx = True
         FLAGS.enable_gpu = True
+        FLAGS.enable_rocm = True
     else:
         all_backends = [
             "ensemble",
@@ -2044,6 +2088,7 @@ def enable_all():
         FLAGS.enable_stats = True
         FLAGS.enable_tracing = True
         FLAGS.enable_gpu = True
+        FLAGS.enable_rocm = True
 
     requested_backends = []
     for be in FLAGS.backend:
@@ -2282,6 +2327,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--enable-gpu", action="store_true", required=False, help="Enable GPU support."
+    )
+    parser.add_argument(
+        "--enable-rocm", action="store_true", required=False, help="Enable AMD GPU support."
     )
     parser.add_argument(
         "--enable-mali-gpu",

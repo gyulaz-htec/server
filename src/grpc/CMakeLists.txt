@@ -108,6 +108,20 @@ if(${TRITON_ENABLE_GPU})
   )
 endif() # TRITON_ENABLE_GPU
 
+if(${TRITON_ENABLE_ROCM})
+  target_compile_definitions(
+    grpc-endpoint-library
+    PRIVATE TRITON_ENABLE_ROCM=1
+    PRIVATE TRITON_MIN_COMPUTE_CAPABILITY=${TRITON_MIN_COMPUTE_CAPABILITY}
+  )
+
+  target_link_libraries(
+    grpc-endpoint-library
+    PUBLIC
+      ROCM::hiprt
+  )
+endif() # TRITON_ENABLE_ROCM
+
 if(${TRITON_ENABLE_METRICS})
   target_compile_definitions(
     grpc-endpoint-library

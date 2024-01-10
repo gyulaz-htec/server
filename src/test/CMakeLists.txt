@@ -108,3 +108,9 @@ if(${TRITON_ENABLE_GPU})
   add_subdirectory(sequence sequence)
   add_subdirectory(implicit_state implicit_state)
 endif()
+
+if(${TRITON_ENABLE_ROCM})
+  add_subdirectory(sequence sequence)
+  add_subdirectory(implicit_state implicit_state)
+endif()
+
