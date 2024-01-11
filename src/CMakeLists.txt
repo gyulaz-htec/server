@@ -71,9 +71,9 @@ endif() # TRITON_ENABLE_GPU
 # ROCM
 #
 if(${TRITON_ENABLE_ROCM})
-  find_package(HIPToolkit REQUIRED)
+  find_package(hiprtc REQUIRED)
   message(STATUS "Using ROCM ${ROCM_VERSION}")
-endif() # TRITON_ENABLE_ROCM
+ endif() # TRITON_ENABLE_ROCM
 
 # libevent
 #
@@ -200,7 +200,7 @@ if(${TRITON_ENABLE_ROCM})
   target_link_libraries(
     main
     PRIVATE
-      ROCM::hiprt
+      hiprtc::hiprtc
   )
 endif() # TRITON_ENABLE_ROCM
 
@@ -446,7 +446,7 @@ if(${TRITON_ENABLE_HTTP}
     target_link_libraries(
       http-endpoint-library
       PUBLIC
-        ROCM::hiprt
+        hiprtc::hiprtc
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -593,7 +593,7 @@ if(${TRITON_ENABLE_TRACING})
     target_link_libraries(
       tracing-library
       PUBLIC
-        rocm::hiprt
+        hiprtc::hiprtc
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -703,7 +703,7 @@ if (NOT WIN32)
     target_link_libraries(
       simple
       PRIVATE
-        ROCM::hiprt
+        hiprtc::hiprtc
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -772,7 +772,7 @@ if (NOT WIN32)
     )
   endif() # TRITON_ENABLE_GPU
 
-  if(${TRITON_ENABLE_RPC<})
+  if(${TRITON_ENABLE_ROCM})
     target_compile_definitions(
       multi_server
       PRIVATE TRITON_ENABLE_ROCM=1
@@ -782,7 +782,7 @@ if (NOT WIN32)
     target_link_libraries(
       multi_server
       PRIVATE
-        ROCM::hiprt
+        hiprtc::hiprtc
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -900,7 +900,7 @@ if (NOT WIN32)
         triton-common-error             # from repo-common
         triton-core-serverapi           # from repo-core
         triton-core-serverstub          # from repo-core
-        ROCM::hiprt
+        hiprtc::hiprtc
       )
 
     install(

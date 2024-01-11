@@ -1090,7 +1090,7 @@ RUN apt update && apt install -y gpg wget && \
     apt-get install -y --no-install-recommends cmake cmake-data
 """
 
-        if FLAGS.enable_gpu:
+        if FLAGS.enable_gpu or FLAGS.enable_rocm:
             df += install_dcgm_libraries(argmap["DCGM_VERSION"], target_machine())
 
     df += """
@@ -1168,7 +1168,7 @@ ARG BASE_IMAGE={}
     # PyTorch and TensorFlow backends need extra CUDA and other
     # dependencies during runtime that are missing in the CPU-only base container.
     # These dependencies must be copied from the Triton Min image.
-    if not FLAGS.enable_gpu and (("pytorch" in backends) or ("tensorflow" in backends)):
+    if not (FLAGS.enable_gpu and FLAGS.enable_rocm) and (("pytorch" in backends) or ("tensorflow" in backends)):
         df += """
 ############################################################################
 ##  Triton Min image
@@ -1550,10 +1550,12 @@ def create_build_dockerfiles(
         base_image = images["base"]
     elif target_platform() == "windows":
         base_image = "mcr.microsoft.com/dotnet/framework/sdk:4.8"
-    elif FLAGS.enable_gpu or FLAGS.enable_rocm:
+    elif FLAGS.enable_gpu:
         base_image = "nvcr.io/nvidia/tritonserver:{}-py3-min".format(
             FLAGS.upstream_container_version
         )
+    elif FLAGS.enable_rocm:
+        base_image = "rocm/pytorch:rocm5.7_ubuntu22.04_py3.10_pytorch_2.0.1"
     else:
         base_image = "ubuntu:22.04"
 
