@@ -118,7 +118,7 @@ if(${TRITON_ENABLE_ROCM})
   target_link_libraries(
     grpc-endpoint-library
     PUBLIC
-      ROCM::hiprt
+      hiprtc::hiprtc
   )
 endif() # TRITON_ENABLE_ROCM
 

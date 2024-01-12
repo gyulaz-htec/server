@@ -1115,7 +1115,7 @@ ENTRYPOINT []
 """
 
     # Install miniconda required for the DALI backend.
-    if target_platform() != "windows":
+    if target_platform() != "windows" and not FLAGS.enable_rocm:
         df += install_miniconda(argmap["CONDA_VERSION"], target_machine())
 
     with open(os.path.join(ddir, dockerfile_name), "w") as dfile:
