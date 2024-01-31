@@ -610,7 +610,7 @@ def backend_cmake_args(images, components, be, install_dir, library_paths):
             "Warning: Detected Jetpack build, backend utility 'device memory tracker' will be disabled as Jetpack doesn't contain required version of the library."
         )
         cargs.append(cmake_backend_enable(be, "TRITON_ENABLE_MEMORY_TRACKER", False))
-    elif FLAGS.enable_gpu or FLAGS.enable_rocm:
+    elif FLAGS.enable_gpu:
         cargs.append(cmake_backend_enable(be, "TRITON_ENABLE_MEMORY_TRACKER", True))
 
     cargs += cmake_backend_extra_args(be)
@@ -1555,7 +1555,7 @@ def create_build_dockerfiles(
             FLAGS.upstream_container_version
         )
     elif FLAGS.enable_rocm:
-        base_image = "rocm/pytorch:rocm5.7_ubuntu22.04_py3.10_pytorch_2.0.1"
+        base_image = "rocm/pytorch:rocm6.0_ubuntu22.04_py3.9_pytorch_2.0.1"
     else:
         base_image = "ubuntu:22.04"
 
