@@ -74,21 +74,6 @@ if(${TRITON_ENABLE_ROCM})
   find_package(hiprtc REQUIRED)
   message(STATUS "Using ROCM ${ROCM_VERSION}")
 
-  if (NOT TRITON_HIPIFY_PERL)
-    find_path(HIPIFY_PERL_PATH
-      NAMES hipify-perl
-      HINTS
-      ${TRITON_ROCM_HOME}/bin
-      ${TRITON_ROCM_HOME}/hip/bin)
-    if (HIPIFY_PERL_PATH-NOTFOUND)
-      MESSAGE(FATAL_ERROR "hipify-perl not found")
-    endif()
-    set(TRITON_HIPIFY_PERL ${HIPIFY_PERL_PATH}/hipify-perl)
-  endif() #TRITON_HIPIFY_PERL
-
-  include(triton_rocm_hipify.cmake)
-
-  hipify("src" triton_excluded_files triton_rocm_generated_cc_srcs triron_providers_rocm_generated_cu_srcs)
  endif() # TRITON_ENABLE_ROCM
 
 # libevent

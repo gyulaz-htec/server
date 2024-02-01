@@ -203,5 +203,5 @@ if __name__ == "__main__":
     parser.add_argument("--output", "-o", help="output file")
     parser.add_argument("src", help="src")
     args = parser.parse_args()
-
+    print("hipifying "+ str(args.src))
     hipify(args.hipify_perl, args.src, args.output)

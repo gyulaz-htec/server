@@ -99,8 +99,8 @@ if (TRITON_ENABLE_METRICS_GPU AND NOT (TRITON_ENABLE_GPU OR TRITON_ENABLE_ROCM))
   message(FATAL_ERROR "TRITON_ENABLE_METRICS_GPU=ON requires TRITON_ENABLE_GPU=ON")
 endif()
 
-if(TRITON_ENABLE_ASAN AND TRITON_ENABLE_GPU)
-  message(FATAL_ERROR "TRITON_ENABLE_ASAN=ON requires TRITON_ENABLE_GPU=OFF")
+if(TRITON_ENABLE_ASAN AND (TRITON_ENABLE_GPU OR TRITON_ENABLE_ROCM))
+  message(FATAL_ERROR "TRITON_ENABLE_ASAN=ON requires TRITON_ENABLE_GPU=OFF & TRITON_ENABLE_ROCM=OFF")
 endif()
 
 #
@@ -205,6 +205,24 @@ endif() # TRITON_ENABLE_GRPC
 if(NOT WIN32 AND ${TRITON_ENABLE_TRACING})
   set(TRITON_DEPENDS ${TRITON_DEPENDS} opentelemetry-cpp)
 endif() # TRITON_ENABLE_TRACING
+
+if(${TRITON_ENABLE_ROCM})
+  if (NOT TRITON_HIPIFY_PERL)
+    find_path(HIPIFY_PERL_PATH
+      NAMES hipify-perl
+      HINTS
+      ${TRITON_ROCM_HOME}/bin
+      ${TRITON_ROCM_HOME}/hip/bin)
+    if (HIPIFY_PERL_PATH-NOTFOUND)
+      MESSAGE(FATAL_ERROR "hipify-perl not found")
+    endif()
+    set(TRITON_HIPIFY_PERL ${HIPIFY_PERL_PATH}/hipify-perl)
+  endif() #TRITON_HIPIFY_PERL
+
+  include(src/triton_rocm_hipify.cmake)
+
+  hipify(src "" src)
+endif()
 
 ExternalProject_Add(triton-server
   PREFIX triton-server
