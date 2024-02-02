@@ -41,7 +41,7 @@
 #include "triton/core/tritonserver.h"
 
 #ifdef TRITON_ENABLE_GPU
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime_api.h>
 #endif  // TRITON_ENABLE_GPU
 
 namespace ni = triton::server;
@@ -54,20 +54,20 @@ TRITONSERVER_MemoryType requested_memory_type;
 #ifdef TRITON_ENABLE_GPU
 static auto cuda_data_deleter = [](void* data) {
   if (data != nullptr) {
-    cudaPointerAttributes attr;
-    auto cuerr = cudaPointerGetAttributes(&attr, data);
-    if (cuerr != cudaSuccess) {
+    hipPointerAttribute_t attr;
+    auto cuerr = hipPointerGetAttributes(&attr, data);
+    if (cuerr != hipSuccess) {
       std::cerr << "error: failed to get CUDA pointer attribute of " << data
-                << ": " << cudaGetErrorString(cuerr) << std::endl;
+                << ": " << hipGetErrorString(cuerr) << std::endl;
     }
-    if (attr.type == cudaMemoryTypeDevice) {
-      cuerr = cudaFree(data);
-    } else if (attr.type == cudaMemoryTypeHost) {
-      cuerr = cudaFreeHost(data);
+    if (attr.type == hipMemoryTypeDevice) {
+      cuerr = hipFree(data);
+    } else if (attr.type == hipMemoryTypeHost) {
+      cuerr = hipHostFree(data);
     }
-    if (cuerr != cudaSuccess) {
+    if (cuerr != hipSuccess) {
       std::cerr << "error: failed to release CUDA pointer " << data << ": "
-                << cudaGetErrorString(cuerr) << std::endl;
+                << hipGetErrorString(cuerr) << std::endl;
     }
   }
 };
@@ -122,47 +122,47 @@ ResponseAlloc(
     switch (*actual_memory_type) {
 #ifdef TRITON_ENABLE_GPU
       case TRITONSERVER_MEMORY_CPU_PINNED: {
-        auto err = cudaSetDevice(*actual_memory_type_id);
-        if ((err != cudaSuccess) && (err != cudaErrorNoDevice) &&
-            (err != cudaErrorInsufficientDriver)) {
+        auto err = hipSetDevice(*actual_memory_type_id);
+        if ((err != hipSuccess) && (err != hipErrorNoDevice) &&
+            (err != hipErrorInsufficientDriver)) {
           return TRITONSERVER_ErrorNew(
               TRITONSERVER_ERROR_INTERNAL,
               std::string(
                   "unable to recover current CUDA device: " +
-                  std::string(cudaGetErrorString(err)))
+                  std::string(hipGetErrorString(err)))
                   .c_str());
         }
 
-        err = cudaHostAlloc(&allocated_ptr, byte_size, cudaHostAllocPortable);
-        if (err != cudaSuccess) {
+        err = hipHostAlloc(&allocated_ptr, byte_size, hipHostMallocPortable);
+        if (err != hipSuccess) {
           return TRITONSERVER_ErrorNew(
               TRITONSERVER_ERROR_INTERNAL,
               std::string(
-                  "cudaHostAlloc failed: " +
-                  std::string(cudaGetErrorString(err)))
+                  "hipHostAlloc failed: " +
+                  std::string(hipGetErrorString(err)))
                   .c_str());
         }
         break;
       }
 
       case TRITONSERVER_MEMORY_GPU: {
-        auto err = cudaSetDevice(*actual_memory_type_id);
-        if ((err != cudaSuccess) && (err != cudaErrorNoDevice) &&
-            (err != cudaErrorInsufficientDriver)) {
+        auto err = hipSetDevice(*actual_memory_type_id);
+        if ((err != hipSuccess) && (err != hipErrorNoDevice) &&
+            (err != hipErrorInsufficientDriver)) {
           return TRITONSERVER_ErrorNew(
               TRITONSERVER_ERROR_INTERNAL,
               std::string(
                   "unable to recover current CUDA device: " +
-                  std::string(cudaGetErrorString(err)))
+                  std::string(hipGetErrorString(err)))
                   .c_str());
         }
 
-        err = cudaMalloc(&allocated_ptr, byte_size);
-        if (err != cudaSuccess) {
+        err = hipMalloc(&allocated_ptr, byte_size);
+        if (err != hipSuccess) {
           return TRITONSERVER_ErrorNew(
               TRITONSERVER_ERROR_INTERNAL,
               std::string(
-                  "cudaMalloc failed: " + std::string(cudaGetErrorString(err)))
+                  "hipMalloc failed: " + std::string(hipGetErrorString(err)))
                   .c_str());
         }
         break;
@@ -215,24 +215,24 @@ ResponseRelease(
       break;
 #ifdef TRITON_ENABLE_GPU
     case TRITONSERVER_MEMORY_CPU_PINNED: {
-      auto err = cudaSetDevice(memory_type_id);
-      if (err == cudaSuccess) {
-        err = cudaFreeHost(buffer);
+      auto err = hipSetDevice(memory_type_id);
+      if (err == hipSuccess) {
+        err = hipHostFree(buffer);
       }
-      if (err != cudaSuccess) {
-        std::cerr << "error: failed to cudaFree " << buffer << ": "
-                  << cudaGetErrorString(err) << std::endl;
+      if (err != hipSuccess) {
+        std::cerr << "error: failed to hipFree " << buffer << ": "
+                  << hipGetErrorString(err) << std::endl;
       }
       break;
     }
     case TRITONSERVER_MEMORY_GPU: {
-      auto err = cudaSetDevice(memory_type_id);
-      if (err == cudaSuccess) {
-        err = cudaFree(buffer);
+      auto err = hipSetDevice(memory_type_id);
+      if (err == hipSuccess) {
+        err = hipFree(buffer);
       }
-      if (err != cudaSuccess) {
-        std::cerr << "error: failed to cudaFree " << buffer << ": "
-                  << cudaGetErrorString(err) << std::endl;
+      if (err != hipSuccess) {
+        std::cerr << "error: failed to hipFree " << buffer << ": "
+                  << hipGetErrorString(err) << std::endl;
       }
       break;
     }
@@ -427,7 +427,7 @@ Check(
         std::cout << name << " is stored in GPU memory" << std::endl;
         odata.reserve(byte_size);
         FAIL_IF_CUDA_ERR(
-            cudaMemcpy(&odata[0], base, byte_size, cudaMemcpyDeviceToHost),
+            hipMemcpy(&odata[0], base, byte_size, hipMemcpyDeviceToHost),
             "getting " + name + " data from GPU memory");
         break;
       }
@@ -679,38 +679,38 @@ RunInferenceAndValidate(
       (enforce_memory_type &&
        (requested_memory_type != TRITONSERVER_MEMORY_CPU));
   if (use_cuda_memory) {
-    FAIL_IF_CUDA_ERR(cudaSetDevice(0), "setting CUDA device to device 0");
+    FAIL_IF_CUDA_ERR(hipSetDevice(0), "setting CUDA device to device 0");
     if (requested_memory_type != TRITONSERVER_MEMORY_CPU_PINNED) {
       void* dst;
       FAIL_IF_CUDA_ERR(
-          cudaMalloc(&dst, input0_size),
+          hipMalloc(&dst, input0_size),
           "allocating GPU memory for INPUT0 data");
       input0_gpu.reset(dst);
       FAIL_IF_CUDA_ERR(
-          cudaMemcpy(dst, &input0_data[0], input0_size, cudaMemcpyHostToDevice),
+          hipMemcpy(dst, &input0_data[0], input0_size, hipMemcpyHostToDevice),
           "setting INPUT0 data in GPU memory");
       FAIL_IF_CUDA_ERR(
-          cudaMalloc(&dst, input1_size),
+          hipMalloc(&dst, input1_size),
           "allocating GPU memory for INPUT1 data");
       input1_gpu.reset(dst);
       FAIL_IF_CUDA_ERR(
-          cudaMemcpy(dst, &input1_data[0], input1_size, cudaMemcpyHostToDevice),
+          hipMemcpy(dst, &input1_data[0], input1_size, hipMemcpyHostToDevice),
           "setting INPUT1 data in GPU memory");
     } else {
       void* dst;
       FAIL_IF_CUDA_ERR(
-          cudaHostAlloc(&dst, input0_size, cudaHostAllocPortable),
+          hipHostAlloc(&dst, input0_size, hipHostMallocPortable),
           "allocating pinned memory for INPUT0 data");
       input0_gpu.reset(dst);
       FAIL_IF_CUDA_ERR(
-          cudaMemcpy(dst, &input0_data[0], input0_size, cudaMemcpyHostToHost),
+          hipMemcpy(dst, &input0_data[0], input0_size, hipMemcpyHostToHost),
           "setting INPUT0 data in pinned memory");
       FAIL_IF_CUDA_ERR(
-          cudaHostAlloc(&dst, input1_size, cudaHostAllocPortable),
+          hipHostAlloc(&dst, input1_size, hipHostMallocPortable),
           "allocating pinned memory for INPUT1 data");
       input1_gpu.reset(dst);
       FAIL_IF_CUDA_ERR(
-          cudaMemcpy(dst, &input1_data[0], input1_size, cudaMemcpyHostToHost),
+          hipMemcpy(dst, &input1_data[0], input1_size, hipMemcpyHostToHost),
           "setting INPUT1 data in pinned memory");
     }
   }

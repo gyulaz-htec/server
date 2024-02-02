@@ -45,7 +45,7 @@ SharedMemoryManager::RegisterSystemSharedMemory(
 #ifdef TRITON_ENABLE_GPU
 TRITONSERVER_Error*
 SharedMemoryManager::RegisterCUDASharedMemory(
-    const std::string& name, const cudaIpcMemHandle_t* cuda_shm_handle,
+    const std::string& name, const hipIpcMemHandle_t* cuda_shm_handle,
     const size_t byte_size, const int device_id)
 {
   return TRITONSERVER_ErrorNew(
@@ -56,7 +56,7 @@ SharedMemoryManager::RegisterCUDASharedMemory(
 
 TRITONSERVER_Error*
 SharedMemoryManager::GetCUDAHandle(
-    const std::string& name, cudaIpcMemHandle_t** cuda_mem_handle)
+    const std::string& name, hipIpcMemHandle_t** cuda_mem_handle)
 {
   return TRITONSERVER_ErrorNew(
       TRITONSERVER_ERROR_UNSUPPORTED,
@@ -199,19 +199,19 @@ UnmapSharedMemory(void* mapped_addr, size_t byte_size)
 #ifdef TRITON_ENABLE_GPU
 TRITONSERVER_Error*
 OpenCudaIPCRegion(
-    const cudaIpcMemHandle_t* cuda_shm_handle, void** data_ptr, int device_id)
+    const hipIpcMemHandle_t* cuda_shm_handle, void** data_ptr, int device_id)
 {
   // Set to device curres
-  cudaSetDevice(device_id);
+  hipSetDevice(device_id);
 
   // Open CUDA IPC handle and read data from it
-  cudaError_t err = cudaIpcOpenMemHandle(
-      data_ptr, *cuda_shm_handle, cudaIpcMemLazyEnablePeerAccess);
-  if (err != cudaSuccess) {
+  hipError_t err = hipIpcOpenMemHandle(
+      data_ptr, *cuda_shm_handle, hipIpcMemLazyEnablePeerAccess);
+  if (err != hipSuccess) {
     return TRITONSERVER_ErrorNew(
         TRITONSERVER_ERROR_INTERNAL, std::string(
                                          "failed to open CUDA IPC handle: " +
-                                         std::string(cudaGetErrorString(err)))
+                                         std::string(hipGetErrorString(err)))
                                          .c_str());
   }
 
@@ -292,7 +292,7 @@ SharedMemoryManager::RegisterSystemSharedMemory(
 #ifdef TRITON_ENABLE_GPU
 TRITONSERVER_Error*
 SharedMemoryManager::RegisterCUDASharedMemory(
-    const std::string& name, const cudaIpcMemHandle_t* cuda_shm_handle,
+    const std::string& name, const hipIpcMemHandle_t* cuda_shm_handle,
     const size_t byte_size, const int device_id)
 {
   // Serialize all operations that write/read current shared memory regions
@@ -362,7 +362,7 @@ SharedMemoryManager::GetMemoryInfo(
 #ifdef TRITON_ENABLE_GPU
 TRITONSERVER_Error*
 SharedMemoryManager::GetCUDAHandle(
-    const std::string& name, cudaIpcMemHandle_t** cuda_mem_handle)
+    const std::string& name, hipIpcMemHandle_t** cuda_mem_handle)
 {
   // protect shared_memory_map_ from concurrent access
   std::lock_guard<std::mutex> lock(mu_);
@@ -526,13 +526,13 @@ SharedMemoryManager::UnregisterHelper(
           UnmapSharedMemory(it->second->mapped_addr_, it->second->byte_size_));
     } else {
 #ifdef TRITON_ENABLE_GPU
-      cudaError_t err = cudaIpcCloseMemHandle(it->second->mapped_addr_);
-      if (err != cudaSuccess) {
+      hipError_t err = hipIpcCloseMemHandle(it->second->mapped_addr_);
+      if (err != hipSuccess) {
         return TRITONSERVER_ErrorNew(
             TRITONSERVER_ERROR_INTERNAL,
             std::string(
                 "failed to close CUDA IPC handle: " +
-                std::string(cudaGetErrorString(err)))
+                std::string(hipGetErrorString(err)))
                 .c_str());
       }
 #else

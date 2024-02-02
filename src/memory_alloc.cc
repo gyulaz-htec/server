@@ -24,7 +24,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime_api.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <unistd.h>
@@ -61,10 +61,10 @@ IOSpec io_spec;
 static auto gpu_data_deleter = [](void* data) {
   if (data != nullptr) {
     FAIL_IF_CUDA_ERR(
-        cudaSetDevice(io_spec.input_type_id_),
+        hipSetDevice(io_spec.input_type_id_),
         "setting CUDA device to release GPU memory on " +
             std::to_string(io_spec.input_type_id_));
-    FAIL_IF_CUDA_ERR(cudaFree(data), "releasing GPU memory");
+    FAIL_IF_CUDA_ERR(hipFree(data), "releasing GPU memory");
   }
 };
 
@@ -112,16 +112,16 @@ ResponseAlloc(
     if (io_spec.output_type_ == TRITONSERVER_MEMORY_CPU) {
       allocated_ptr = malloc(byte_size);
     } else {
-      auto err = cudaSetDevice(io_spec.output_type_id_);
-      if (err == cudaSuccess) {
-        err = cudaMalloc(&allocated_ptr, byte_size);
+      auto err = hipSetDevice(io_spec.output_type_id_);
+      if (err == hipSuccess) {
+        err = hipMalloc(&allocated_ptr, byte_size);
       }
-      if (err != cudaSuccess) {
+      if (err != hipSuccess) {
         return TRITONSERVER_ErrorNew(
             TRITONSERVER_ERROR_INTERNAL,
             std::string(
                 "failed to allocate CUDA memory: " +
-                std::string(cudaGetErrorString(err)))
+                std::string(hipGetErrorString(err)))
                 .c_str());
       }
     }
@@ -169,15 +169,15 @@ ResponseRelease(
   if (memory_type == TRITONSERVER_MEMORY_CPU) {
     free(buffer);
   } else {
-    auto err = cudaSetDevice(memory_type_id);
-    if (err == cudaSuccess) {
-      err = cudaFree(buffer);
+    auto err = hipSetDevice(memory_type_id);
+    if (err == hipSuccess) {
+      err = hipFree(buffer);
     }
-    if (err != cudaSuccess) {
+    if (err != hipSuccess) {
       return TRITONSERVER_ErrorNew(
           TRITONSERVER_ERROR_INTERNAL, std::string(
                                            "failed to release CUDA memory: " +
-                                           std::string(cudaGetErrorString(err)))
+                                           std::string(hipGetErrorString(err)))
                                            .c_str());
     }
   }
@@ -724,21 +724,21 @@ main(int argc, char** argv)
       nullptr, gpu_data_deleter);
   if (gpu_input) {
     FAIL_IF_CUDA_ERR(
-        cudaSetDevice(io_spec.input_type_id_),
+        hipSetDevice(io_spec.input_type_id_),
         "setting CUDA device to device " +
             std::to_string(io_spec.input_type_id_));
     void* dst;
     FAIL_IF_CUDA_ERR(
-        cudaMalloc(&dst, input0_size), "allocating GPU memory for INPUT0 data");
+        hipMalloc(&dst, input0_size), "allocating GPU memory for INPUT0 data");
     input0_gpu.reset(dst);
     FAIL_IF_CUDA_ERR(
-        cudaMemcpy(dst, &input0_data[0], input0_size, cudaMemcpyHostToDevice),
+        hipMemcpy(dst, &input0_data[0], input0_size, hipMemcpyHostToDevice),
         "setting INPUT0 data in GPU memory");
     FAIL_IF_CUDA_ERR(
-        cudaMalloc(&dst, input1_size), "allocating GPU memory for INPUT1 data");
+        hipMalloc(&dst, input1_size), "allocating GPU memory for INPUT1 data");
     input1_gpu.reset(dst);
     FAIL_IF_CUDA_ERR(
-        cudaMemcpy(dst, &input1_data[0], input1_size, cudaMemcpyHostToDevice),
+        hipMemcpy(dst, &input1_data[0], input1_size, hipMemcpyHostToDevice),
         "setting INPUT1 data in GPU memory");
   }
 
@@ -923,9 +923,9 @@ main(int argc, char** argv)
   } else {
     std::cout << "OUTPUT0 are stored in GPU memory" << std::endl;
     FAIL_IF_CUDA_ERR(
-        cudaMemcpy(
+        hipMemcpy(
             &output0_data[0], output0_content, output0_byte_size,
-            cudaMemcpyDeviceToHost),
+            hipMemcpyDeviceToHost),
         "setting INPUT0 data in GPU memory");
     output0_result = &output0_data[0];
   }
@@ -935,9 +935,9 @@ main(int argc, char** argv)
   } else {
     std::cout << "OUTPUT1 are stored in GPU memory" << std::endl;
     FAIL_IF_CUDA_ERR(
-        cudaMemcpy(
+        hipMemcpy(
             &output1_data[0], output1_content, output1_byte_size,
-            cudaMemcpyDeviceToHost),
+            hipMemcpyDeviceToHost),
         "setting INPUT0 data in GPU memory");
     output1_result = &output1_data[0];
   }

@@ -121,9 +121,9 @@ const std::vector<std::string> TRITON_RESERVED_REQUEST_PARAMS{
 #ifdef TRITON_ENABLE_GPU
 #define FAIL_IF_CUDA_ERR(X, MSG)                                           \
   do {                                                                     \
-    cudaError_t err__ = (X);                                               \
-    if (err__ != cudaSuccess) {                                            \
-      std::cerr << "error: " << (MSG) << ": " << cudaGetErrorString(err__) \
+    hipError_t err__ = (X);                                               \
+    if (err__ != hipSuccess) {                                            \
+      std::cerr << "error: " << (MSG) << ": " << hipGetErrorString(err__) \
                 << std::endl;                                              \
       exit(1);                                                             \
     }                                                                      \

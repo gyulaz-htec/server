@@ -39,7 +39,7 @@
 #include "triton/common/triton_json.h"
 
 #ifdef TRITON_ENABLE_GPU
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime_api.h>
 #endif  // TRITON_ENABLE_GPU
 
 namespace triton { namespace server {
@@ -74,7 +74,7 @@ class SharedMemoryManager {
   /// \param device id The GPU number the shared memory region is in.
   /// \return a TRITONSERVER_Error indicating success or failure.
   TRITONSERVER_Error* RegisterCUDASharedMemory(
-      const std::string& name, const cudaIpcMemHandle_t* cuda_shm_handle,
+      const std::string& name, const hipIpcMemHandle_t* cuda_shm_handle,
       const size_t byte_size, const int device_id);
 #endif  // TRITON_ENABLE_GPU
 
@@ -101,7 +101,7 @@ class SharedMemoryManager {
   /// block.
   /// \return a TRITONSERVER_Error indicating success or failure.
   TRITONSERVER_Error* GetCUDAHandle(
-      const std::string& name, cudaIpcMemHandle_t** cuda_mem_handle);
+      const std::string& name, hipIpcMemHandle_t** cuda_mem_handle);
 #endif
 
   /// Populates the status of active system/CUDA shared memory regions
@@ -166,7 +166,7 @@ class SharedMemoryManager {
         const std::string& name, const std::string& shm_key,
         const size_t offset, const size_t byte_size, int shm_fd,
         void* mapped_addr, const TRITONSERVER_MemoryType kind,
-        const int64_t device_id, const cudaIpcMemHandle_t* cuda_ipc_handle)
+        const int64_t device_id, const hipIpcMemHandle_t* cuda_ipc_handle)
         : SharedMemoryInfo(
               name, shm_key, offset, byte_size, shm_fd, mapped_addr, kind,
               device_id),
@@ -174,7 +174,7 @@ class SharedMemoryManager {
     {
     }
 
-    cudaIpcMemHandle_t cuda_ipc_handle_;
+    hipIpcMemHandle_t cuda_ipc_handle_;
   };
 #endif
 

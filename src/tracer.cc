@@ -33,7 +33,7 @@
 #include "common.h"
 #include "triton/common/logging.h"
 #ifdef TRITON_ENABLE_GPU
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime_api.h>
 #endif  // TRITON_ENABLE_GPU
 #ifndef _WIN32
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"
@@ -767,7 +767,7 @@ TraceManager::TraceTensorActivity(
       return;
     }
     FAIL_IF_CUDA_ERR(
-        cudaMemcpy(buffer_base, base, byte_size, cudaMemcpyDeviceToHost),
+        hipMemcpy(buffer_base, base, byte_size, hipMemcpyDeviceToHost),
         "copying buffer into CPU memory");
 #else
     LOG_ERROR << "GPU buffer is unsupported";
