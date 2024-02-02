@@ -2287,16 +2287,16 @@ HTTPAPIServer::HandleCudaSharedMemory(
             std::vector<char> raw_handle(b64_handle_len + 1);
             size_t decoded_size = base64_decode_block(
                 b64_handle, b64_handle_len, raw_handle.data(), &s);
-            if (decoded_size != sizeof(cudaIpcMemHandle_t)) {
+            if (decoded_size != sizeof(hipIpcMemHandle_t)) {
               err = TRITONSERVER_ErrorNew(
                   TRITONSERVER_ERROR_INVALID_ARG,
                   "'raw_handle' must be a valid base64 encoded "
-                  "cudaIpcMemHandle_t");
+                  "hipIpcMemHandle_t");
             } else {
-              raw_handle.resize(sizeof(cudaIpcMemHandle_t));
+              raw_handle.resize(sizeof(hipIpcMemHandle_t));
               err = shm_manager_->RegisterCUDASharedMemory(
                   region_name.c_str(),
-                  reinterpret_cast<const cudaIpcMemHandle_t*>(
+                  reinterpret_cast<const hipIpcMemHandle_t*>(
                       raw_handle.data()),
                   byte_size, device_id);
             }
@@ -2542,7 +2542,7 @@ HTTPAPIServer::ParseJsonTritonIO(
             shm_region, shm_offset, &base, &memory_type, &memory_type_id));
         if (memory_type == TRITONSERVER_MEMORY_GPU) {
 #ifdef TRITON_ENABLE_ROCM
-          cudaIpcMemHandle_t* cuda_handle;
+          hipIpcMemHandle_t* cuda_handle;
           RETURN_IF_ERR(shm_manager_->GetCUDAHandle(shm_region, &cuda_handle));
           TRITONSERVER_BufferAttributes* buffer_attributes;
           RETURN_IF_ERR(TRITONSERVER_BufferAttributesNew(&buffer_attributes));
@@ -2657,7 +2657,7 @@ HTTPAPIServer::ParseJsonTritonIO(
 
         if (memory_type == TRITONSERVER_MEMORY_GPU) {
 #ifdef TRITON_ENABLE_ROCM
-          cudaIpcMemHandle_t* cuda_handle;
+          hipIpcMemHandle_t* cuda_handle;
           RETURN_IF_ERR(shm_manager_->GetCUDAHandle(shm_region, &cuda_handle));
           infer_req->alloc_payload_.output_map_.emplace(
               std::piecewise_construct, std::forward_as_tuple(output_name),
