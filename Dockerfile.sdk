@@ -37,7 +37,7 @@ ARG TRITON_CORE_REPO_TAG=main
 ARG TRITON_BACKEND_REPO_TAG=main
 ARG TRITON_THIRD_PARTY_REPO_TAG=main
 ARG TRITON_MODEL_ANALYZER_REPO_TAG=main
-ARG TRITON_ENABLE_GPU=ON
+ARG TRITON_ENABLE_ROCM=ON
 ARG JAVA_BINDINGS_MAVEN_VERSION=3.8.4
 ARG JAVA_BINDINGS_JAVACPP_PRESETS_TAG=1.5.8
 
@@ -109,7 +109,7 @@ ARG TRITON_COMMON_REPO_TAG
 ARG TRITON_CORE_REPO_TAG
 ARG TRITON_BACKEND_REPO_TAG
 ARG TRITON_THIRD_PARTY_REPO_TAG
-ARG TRITON_ENABLE_GPU
+ARG TRITON_ENABLE_ROCM
 ARG JAVA_BINDINGS_MAVEN_VERSION
 ARG JAVA_BINDINGS_JAVACPP_PRESETS_TAG
 ARG TARGETPLATFORM
@@ -133,7 +133,7 @@ RUN cmake -DCMAKE_INSTALL_PREFIX=/workspace/install \
           -DTRITON_ENABLE_PERF_ANALYZER_TFS=ON \
           -DTRITON_ENABLE_PERF_ANALYZER_TS=ON \
           -DTRITON_ENABLE_EXAMPLES=ON -DTRITON_ENABLE_TESTS=ON \
-          -DTRITON_ENABLE_GPU=${TRITON_ENABLE_GPU} /workspace/client
+          -DTRITON_ENABLE_ROCM=${TRITON_ENABLE_ROCM} /workspace/client
 RUN make -j16 cc-clients python-clients java-clients && \
     rm -fr ~/.m2
 
@@ -157,7 +157,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG DCGM_VERSION
 ARG TRITON_CORE_REPO_TAG
 ARG TARGETPLATFORM
-ARG TRITON_ENABLE_GPU
+ARG TRITON_ENABLE_ROCM
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -213,7 +213,7 @@ RUN pip3 install --upgrade numpy pillow attrdict && \
     xargs pip3 install --upgrade
 
 # Install DCGM
-RUN if [ "$TRITON_ENABLE_GPU" = "ON" ]; then \
+RUN if [ "$TRITON_ENABLE_ROCM" = "ON" ]; then \
         [ "$(uname -m)" != "x86_64" ] && arch="sbsa" || arch="x86_64" && \
         curl -o /tmp/cuda-keyring.deb \
         https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/$arch/cuda-keyring_1.0-1_all.deb \
