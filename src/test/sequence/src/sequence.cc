@@ -847,9 +847,9 @@ TRITONBACKEND_ModelInstanceExecute(
     if (input_memory_type == TRITONSERVER_MEMORY_GPU) {
       ipbuffer_vec.resize(input_element_cnt);
       ipbuffer_int = ipbuffer_vec.data();
-      cudaMemcpy(
+      hipMemcpy(
           const_cast<int32_t*>(ipbuffer_int), input_buffer, input_byte_size,
-          cudaMemcpyDeviceToHost);
+          hipMemcpyDeviceToHost);
     } else {
       ipbuffer_int = reinterpret_cast<const int32_t*>(input_buffer);
     }
@@ -939,9 +939,9 @@ TRITONBACKEND_ModelInstanceExecute(
         }
 
         if (output_memory_type == TRITONSERVER_MEMORY_GPU) {
-          cudaMemcpy(
+          hipMemcpy(
               output_buffer, const_cast<int32_t*>(obuffer_int),
-              buffer_byte_size, cudaMemcpyHostToDevice);
+              buffer_byte_size, hipMemcpyHostToDevice);
         }
       }
     }
