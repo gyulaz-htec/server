@@ -2239,7 +2239,7 @@ HTTPAPIServer::HandleCudaSharedMemory(
           TRITONSERVER_ERROR_INVALID_ARG,
           "'region name' is necessary to register cuda shared memory region");
     } else {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
       struct evbuffer_iovec* v = nullptr;
       int v_idx = 0;
       int n = evbuffer_peek(req->buffer_in, -1, NULL, NULL, 0);
@@ -2310,7 +2310,7 @@ HTTPAPIServer::HandleCudaSharedMemory(
               "failed to register CUDA shared memory region: '" + region_name +
               "', GPUs not supported")
               .c_str());
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
     }
   } else if (action == "unregister") {
     if (region_name.empty()) {
@@ -2541,7 +2541,7 @@ HTTPAPIServer::ParseJsonTritonIO(
         RETURN_IF_ERR(shm_manager_->GetMemoryInfo(
             shm_region, shm_offset, &base, &memory_type, &memory_type_id));
         if (memory_type == TRITONSERVER_MEMORY_GPU) {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
           cudaIpcMemHandle_t* cuda_handle;
           RETURN_IF_ERR(shm_manager_->GetCUDAHandle(shm_region, &cuda_handle));
           TRITONSERVER_BufferAttributes* buffer_attributes;
@@ -2656,7 +2656,7 @@ HTTPAPIServer::ParseJsonTritonIO(
             shm_region, offset, &base, &memory_type, &memory_type_id));
 
         if (memory_type == TRITONSERVER_MEMORY_GPU) {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
           cudaIpcMemHandle_t* cuda_handle;
           RETURN_IF_ERR(shm_manager_->GetCUDAHandle(shm_region, &cuda_handle));
           infer_req->alloc_payload_.output_map_.emplace(

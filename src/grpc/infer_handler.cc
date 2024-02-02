@@ -430,10 +430,10 @@ InferGRPCToInput(
           region_name, offset, &tmp, &memory_type, &memory_type_id));
       base = tmp;
       if (memory_type == TRITONSERVER_MEMORY_GPU) {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
         RETURN_IF_ERR(shm_manager->GetCUDAHandle(
             region_name,
-            reinterpret_cast<cudaIpcMemHandle_t**>(&cuda_ipc_handle)));
+            reinterpret_cast<hipIpcMemHandle_t**>(&cuda_ipc_handle)));
 #endif
       }
     } else {

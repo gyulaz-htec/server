@@ -112,11 +112,11 @@ struct TritonServerParameters {
   bool strict_model_config_{false};
   bool strict_readiness_{true};
   int32_t exit_timeout_secs_{30};
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
   double min_supported_compute_capability_{TRITON_MIN_COMPUTE_CAPABILITY};
 #else
   double min_supported_compute_capability_{0.0};
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
   std::string repoagent_dir_{"/opt/tritonserver/repoagents"};
   std::string backend_dir_{"/opt/tritonserver/backends"};
   std::vector<std::tuple<std::string, std::string, std::string>>

@@ -328,10 +328,10 @@ InferAllocatorPayload(
           region_name, offset, &base, &memory_type, &memory_type_id));
 
       if (memory_type == TRITONSERVER_MEMORY_GPU) {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
         char* cuda_handle;
         RETURN_IF_ERR(shm_manager->GetCUDAHandle(
-            region_name, reinterpret_cast<cudaIpcMemHandle_t**>(&cuda_handle)));
+            region_name, reinterpret_cast<hipIpcMemHandle_t**>(&cuda_handle)));
         alloc_payload->shm_map_.emplace(
             io.name(),
             ShmInfo(base, byte_size, memory_type, memory_type_id, cuda_handle));

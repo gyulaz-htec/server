@@ -73,11 +73,11 @@
 #include "grpc/grpc_server.h"
 #endif  // TRITON_ENABLE_GRPC
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 static_assert(
     TRITON_MIN_COMPUTE_CAPABILITY >= 1.0,
     "Invalid TRITON_MIN_COMPUTE_CAPABILITY specified");
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
 namespace {
 

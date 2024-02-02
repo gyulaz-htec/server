@@ -42,7 +42,7 @@ SharedMemoryManager::RegisterSystemSharedMemory(
           .c_str());
 }
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 TRITONSERVER_Error*
 SharedMemoryManager::RegisterCUDASharedMemory(
     const std::string& name, const hipIpcMemHandle_t* cuda_shm_handle,
@@ -63,7 +63,7 @@ SharedMemoryManager::GetCUDAHandle(
       std::string("Shared memory feature is currently not supported on Windows")
           .c_str());
 }
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
 TRITONSERVER_Error*
 SharedMemoryManager::GetMemoryInfo(
@@ -196,7 +196,7 @@ UnmapSharedMemory(void* mapped_addr, size_t byte_size)
   return nullptr;
 }
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 TRITONSERVER_Error*
 OpenCudaIPCRegion(
     const hipIpcMemHandle_t* cuda_shm_handle, void** data_ptr, int device_id)
@@ -217,7 +217,7 @@ OpenCudaIPCRegion(
 
   return nullptr;
 }
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
 }  // namespace
 
@@ -289,7 +289,7 @@ SharedMemoryManager::RegisterSystemSharedMemory(
   return nullptr;  // success
 }
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 TRITONSERVER_Error*
 SharedMemoryManager::RegisterCUDASharedMemory(
     const std::string& name, const hipIpcMemHandle_t* cuda_shm_handle,
@@ -329,7 +329,7 @@ SharedMemoryManager::RegisterCUDASharedMemory(
 
   return nullptr;  // success
 }
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
 TRITONSERVER_Error*
 SharedMemoryManager::GetMemoryInfo(
@@ -359,7 +359,7 @@ SharedMemoryManager::GetMemoryInfo(
   return nullptr;
 }
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 TRITONSERVER_Error*
 SharedMemoryManager::GetCUDAHandle(
     const std::string& name, hipIpcMemHandle_t** cuda_mem_handle)
@@ -525,7 +525,7 @@ SharedMemoryManager::UnregisterHelper(
       RETURN_IF_ERR(
           UnmapSharedMemory(it->second->mapped_addr_, it->second->byte_size_));
     } else {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
       hipError_t err = hipIpcCloseMemHandle(it->second->mapped_addr_);
       if (err != hipSuccess) {
         return TRITONSERVER_ErrorNew(
@@ -542,7 +542,7 @@ SharedMemoryManager::UnregisterHelper(
               "failed to unregister CUDA shared memory region: '" + name +
               "', GPUs not supported")
               .c_str());
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
     }
 
     // Remove region information from shared_memory_map_

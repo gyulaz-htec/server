@@ -118,7 +118,7 @@ const std::vector<std::string> TRITON_RESERVED_REQUEST_PARAMS{
     }                                  \
   } while (false)
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 #define FAIL_IF_CUDA_ERR(X, MSG)                                           \
   do {                                                                     \
     hipError_t err__ = (X);                                               \
@@ -128,7 +128,7 @@ const std::vector<std::string> TRITON_RESERVED_REQUEST_PARAMS{
       exit(1);                                                             \
     }                                                                      \
   } while (false)
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
 /// Get the integral version from a string, or fail if string does not
 /// represent a valid version.

@@ -32,9 +32,9 @@
 
 #include "common.h"
 #include "triton/common/logging.h"
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 #include <hip/hip_runtime_api.h>
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 #ifndef _WIN32
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
@@ -760,7 +760,7 @@ TraceManager::TraceTensorActivity(
 
   void* buffer_base = const_cast<void*>(base);
   if (memory_type == TRITONSERVER_MEMORY_GPU) {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
     buffer_base = malloc(byte_size);
     if (buffer_base == nullptr) {
       LOG_ERROR << "Failed to malloc CPU buffer";
@@ -772,7 +772,7 @@ TraceManager::TraceTensorActivity(
 #else
     LOG_ERROR << "GPU buffer is unsupported";
     return;
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
   }
 
   uint64_t id;
@@ -966,11 +966,11 @@ TraceManager::TraceTensorActivity(
   }
 
   if (memory_type == TRITONSERVER_MEMORY_GPU) {
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
     if (buffer_base != nullptr) {
       free(buffer_base);
     }
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
   }
 }
 

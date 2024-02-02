@@ -1944,10 +1944,10 @@ CommonHandler::RegisterCudaSharedMemoryRegister()
           inference::CudaSharedMemoryRegisterResponse* response,
           ::grpc::Status* status) {
         TRITONSERVER_Error* err = nullptr;
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
         err = shm_manager_->RegisterCUDASharedMemory(
             request.name(),
-            reinterpret_cast<const cudaIpcMemHandle_t*>(
+            reinterpret_cast<const hipIpcMemHandle_t*>(
                 request.raw_handle().c_str()),
             request.byte_size(), request.device_id());
 #else
@@ -1957,7 +1957,7 @@ CommonHandler::RegisterCudaSharedMemoryRegister()
                 "failed to register CUDA shared memory region: '" +
                 request.name() + "', GPUs not supported")
                 .c_str());
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
         GrpcStatusUtil::Create(status, err);
         TRITONSERVER_ErrorDelete(err);

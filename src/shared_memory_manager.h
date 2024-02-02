@@ -38,9 +38,9 @@
 #define TRITONJSON_STATUSSUCCESS nullptr
 #include "triton/common/triton_json.h"
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
 #include <hip/hip_runtime_api.h>
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
 namespace triton { namespace server {
 
@@ -63,7 +63,7 @@ class SharedMemoryManager {
       const std::string& name, const std::string& shm_key, const size_t offset,
       const size_t byte_size);
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
   /// Add a shared memory block representing shared memory in CUDA
   /// (GPU) memory to the manager. Return TRITONSERVER_ERROR_ALREADY_EXISTS
   /// if a shared memory block of the same name already exists in the manager.
@@ -76,7 +76,7 @@ class SharedMemoryManager {
   TRITONSERVER_Error* RegisterCUDASharedMemory(
       const std::string& name, const hipIpcMemHandle_t* cuda_shm_handle,
       const size_t byte_size, const int device_id);
-#endif  // TRITON_ENABLE_GPU
+#endif  // TRITON_ENABLE_ROCM
 
   /// Get the access information for the shared memory block
   /// with the specified name. Return TRITONSERVER_ERROR_NOT_FOUND
@@ -93,7 +93,7 @@ class SharedMemoryManager {
       const std::string& name, size_t offset, void** shm_mapped_addr,
       TRITONSERVER_MemoryType* memory_type, int64_t* device_id);
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
   /// Get the CUDA memory handle associated with the block name.
   /// Return TRITONSERVER_ERROR_NOT_FOUND if named block doesn't exist.
   /// \param name The name of the shared memory block to get.
@@ -160,7 +160,7 @@ class SharedMemoryManager {
     int64_t device_id_;
   };
 
-#ifdef TRITON_ENABLE_GPU
+#ifdef TRITON_ENABLE_ROCM
   struct CUDASharedMemoryInfo : SharedMemoryInfo {
     CUDASharedMemoryInfo(
         const std::string& name, const std::string& shm_key,
