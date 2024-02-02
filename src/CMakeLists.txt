@@ -72,8 +72,6 @@ endif() # TRITON_ENABLE_GPU
 #
 if(${TRITON_ENABLE_ROCM})
   find_package(hiprtc REQUIRED)
-  message(STATUS "Using ROCM ${ROCM_VERSION}")
-
  endif() # TRITON_ENABLE_ROCM
 
 # libevent
@@ -403,7 +401,7 @@ if(${TRITON_ENABLE_HTTP}
       triton-common-logging   # from repo-common
       triton-core-serverapi   # from repo-core
       triton-core-serverstub  # from repo-core
-      ${LIBEVENT_LIBRARIES}
+      ${LIBEVENT_LIBRARIES}?
       libevhtp::evhtp
       ${RE2_LIBRARY}
   )

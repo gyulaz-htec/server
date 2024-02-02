@@ -207,12 +207,60 @@ if(NOT WIN32 AND ${TRITON_ENABLE_TRACING})
 endif() # TRITON_ENABLE_TRACING
 
 if(${TRITON_ENABLE_ROCM})
+  set(TRITON_ROCM_HOME /opt/rocm)
+
+  if (NOT CMAKE_HIP_COMPILER)
+    set(CMAKE_HIP_COMPILER "${TRITON_ROCM_HOME}/llvm/bin/clang++")
+  endif()
+
+  if (NOT CMAKE_HIP_ARCHITECTURES)
+    set(CMAKE_HIP_ARCHITECTURES "gfx906;gfx908;gfx90a;gfx1030;gfx1100;gfx1101;gfx940;gfx941;gfx942")
+  endif()
+
+  file(GLOB rocm_cmake_components ${TRITON_ROCM_HOME}/lib/cmake/*)
+  list(APPEND CMAKE_PREFIX_PATH ${rocm_cmake_components})
+  # Force cmake to accept the configured HIP compiler. Because the configured CMAKE_PREFIX_PATH does not work during
+  # enable_language(HIP), we might need to move configuring of CMAKE_PREFIX_PATH to build.py (in the future).
+  set(CMAKE_HIP_COMPILER_FORCED ON)
+
+  enable_language(HIP)
+  # NOTE: Flags -mllvm -amdgpu-early-inline-all=true are critical for gpu kernel code performance. -mllvm passes the
+  # next flag to underlying LLVM instead of clang and -amdgpu-early-inline-all=true is the optimization flag for LLVM.
+  # With CMake's enable_language(HIP), additional flags including the proceeding one are propagated from
+  # hip-lang::device library. But in some weird cases, the hip-lang::device target may not be properly configured, for
+  # example, the CMAKE_PREFIX_PATH might be improperly configured.
+  if(NOT DEFINED _CMAKE_HIP_DEVICE_RUNTIME_TARGET)
+    message(FATAL_ERROR "HIP Language is not properly configured.")
+  endif()
+  add_compile_options("$<$<COMPILE_LANGUAGE:HIP>:SHELL:-x hip -parallel-jobs=2>")
+
+  # replicate strategy used by pytorch to get ROCM_VERSION
+  file(READ "${TRITON_ROCM_HOME}/.info/version-dev" ROCM_VERSION_DEV_RAW)
+  string(REGEX MATCH "^([0-9]+)\.([0-9]+)\.([0-9]+)-.*$" ROCM_VERSION_DEV_MATCH ${ROCM_VERSION_DEV_RAW})
+  if (ROCM_VERSION_DEV_MATCH)
+    set(ROCM_VERSION_DEV_MAJOR ${CMAKE_MATCH_1})
+    set(ROCM_VERSION_DEV_MINOR ${CMAKE_MATCH_2})
+    set(ROCM_VERSION_DEV_PATCH ${CMAKE_MATCH_3})
+    set(ROCM_VERSION_DEV "${ROCM_VERSION_DEV_MAJOR}.${ROCM_VERSION_DEV_MINOR}.${ROCM_VERSION_DEV_PATCH}")
+    math(EXPR ROCM_VERSION_DEV_INT "(${ROCM_VERSION_DEV_MAJOR}*10000) + (${ROCM_VERSION_DEV_MINOR}*100) + ${ROCM_VERSION_DEV_PATCH}")
+  endif()
+  message("\n***** ROCm version from ${TRITON_ROCM_HOME}/.info/version-dev ****\n")
+  message("ROCM_VERSION_DEV: ${ROCM_VERSION_DEV}")
+  message("ROCM_VERSION_DEV_MAJOR: ${ROCM_VERSION_DEV_MAJOR}")
+  message("ROCM_VERSION_DEV_MINOR: ${ROCM_VERSION_DEV_MINOR}")
+  message("ROCM_VERSION_DEV_PATCH: ${ROCM_VERSION_DEV_PATCH}")
+  message("ROCM_VERSION_DEV_INT:   ${ROCM_VERSION_DEV_INT}")
+  message("\n***** HIP LANGUAGE CONFIG INFO ****\n")
+  message("CMAKE_HIP_COMPILER:      ${CMAKE_HIP_COMPILER}")
+  message("CMAKE_HIP_ARCHITECTURES: ${CMAKE_HIP_ARCHITECTURES}")
+  message("CMAKE_HIP_FLAGS:         ${CMAKE_HIP_FLAGS}")
+
   if (NOT TRITON_HIPIFY_PERL)
     find_path(HIPIFY_PERL_PATH
       NAMES hipify-perl
       HINTS
-      ${TRITON_ROCM_HOME}/bin
-      ${TRITON_ROCM_HOME}/hip/bin)
+      ${TRITON_BUILD_ROCM_HOME}/bin
+      ${TRITON_BUILD_ROCM_HOME}/hip/bin)
     if (HIPIFY_PERL_PATH-NOTFOUND)
       MESSAGE(FATAL_ERROR "hipify-perl not found")
     endif()
@@ -221,13 +269,15 @@ if(${TRITON_ENABLE_ROCM})
 
   include(src/triton_rocm_hipify.cmake)
   set(REPO_ROOT ${PROJECT_SOURCE_DIR})
-  hipify("./" "" triton_hipified_cc_srcs triton_hipified_cu_srcs)
+  hipify(src "" triton_hipified_cc_srcs triton_hipified_cu_srcs)
 
-add_custom_target(generated_hipified_files DEPENDS
-  ${triton_hipified_cc_srcs}
-  ${triton_hipified_cu_srcs})
+  add_custom_target(generated_hipified_files DEPENDS
+    ${triton_hipified_cc_srcs}
+    ${triton_hipified_cu_srcs})
                  
   auto_set_source_files_hip_language(triton_hipified_cu_srcs)
+
+  #message(FATAL_ERROR "TEST")
 endif()
 
 ExternalProject_Add(triton-server
