@@ -220,8 +220,14 @@ if(${TRITON_ENABLE_ROCM})
   endif() #TRITON_HIPIFY_PERL
 
   include(src/triton_rocm_hipify.cmake)
+  set(REPO_ROOT ${PROJECT_SOURCE_DIR})
+  hipify("./" "" triton_hipified_cc_srcs triton_hipified_cu_srcs)
 
-  hipify(src "" src)
+add_custom_target(generated_hipified_files DEPENDS
+  ${triton_hipified_cc_srcs}
+  ${triton_hipified_cu_srcs})
+                 
+  auto_set_source_files_hip_language(triton_hipified_cu_srcs)
 endif()
 
 ExternalProject_Add(triton-server
