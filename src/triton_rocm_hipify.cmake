@@ -14,7 +14,7 @@ endfunction()
 # cuda_dir must be relative to REPO_ROOT
 function(hipify cuda_dir in_excluded_file_patterns out_generated_cc_files out_generated_cu_files)
   set(hipify_tool ${REPO_ROOT}/src/amd_hipify.py)
-  message(FATAL_ERROR "Tool is ${hipify_tool}")
+  #message(FATAL_ERROR "Tool is ${hipify_tool}")
 
    file(GLOB_RECURSE srcs CONFIGURE_DEPENDS
     "${REPO_ROOT}/*.h"
@@ -41,9 +41,10 @@ message(STATUS "Project Root ${REPO_ROOT} ")
     string(REPLACE "cuda" "rocm" rocm_f_rel ${cuda_f_rel})
     set(f_out "${CMAKE_CURRENT_BINARY_DIR}/amdgpu/${rocm_f_rel}")
     add_custom_command(
+      OUTPUT ${f_out}
       COMMAND Python3::Interpreter ${hipify_tool}
               --hipify_perl ${TRITON_HIPIFY_PERL}
-              ${f} --inplace
+              ${f} -o ${f_out}
       DEPENDS ${hipify_tool} ${f}
       COMMENT WARNING "Hipify: ${cuda_f_rel} -> amdgpu/${rocm_f_rel}"
     )
