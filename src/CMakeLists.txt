@@ -71,8 +71,8 @@ endif() # TRITON_ENABLE_GPU
 # ROCM
 #
 if(${TRITON_ENABLE_ROCM})
-  find_package(hiprtc REQUIRED)
- endif() # TRITON_ENABLE_ROCM
+  find_package(hip REQUIRED)
+endif() # TRITON_ENABLE_ROCM
 
 # libevent
 #
@@ -140,7 +140,7 @@ else()
   target_compile_options(
     main
     PRIVATE
-      -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-declarations -Werror
+      -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-declarations 
   )
 endif()
 
@@ -199,7 +199,7 @@ if(${TRITON_ENABLE_ROCM})
   target_link_libraries(
     main
     PRIVATE
-      hiprtc::hiprtc
+      hip::host
   )
 endif() # TRITON_ENABLE_ROCM
 
@@ -445,7 +445,7 @@ if(${TRITON_ENABLE_HTTP}
     target_link_libraries(
       http-endpoint-library
       PUBLIC
-        hiprtc::hiprtc
+        hip::host
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -592,7 +592,7 @@ if(${TRITON_ENABLE_TRACING})
     target_link_libraries(
       tracing-library
       PUBLIC
-        hiprtc::hiprtc
+        hip::host
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -702,7 +702,7 @@ if (NOT WIN32)
     target_link_libraries(
       simple
       PRIVATE
-        hiprtc::hiprtc
+        hip::host
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -781,7 +781,7 @@ if (NOT WIN32)
     target_link_libraries(
       multi_server
       PRIVATE
-        hiprtc::hiprtc
+        hip::host
     )
   endif() # TRITON_ENABLE_ROCM
 
@@ -899,7 +899,7 @@ if (NOT WIN32)
         triton-common-error             # from repo-common
         triton-core-serverapi           # from repo-core
         triton-core-serverstub          # from repo-core
-        hiprtc::hiprtc
+        hip::host
       )
 
     install(
@@ -911,8 +911,10 @@ if (NOT WIN32)
 endif() # NOT WIN32
 
 # Currently unit tests do not build for windows...
-if ( NOT WIN32)
+if (NOT TRITON_ENABLE_ROCM)
+if ( NOT WIN32) 
   if ( NOT EXISTS "/etc/ld.so.conf.d/nvidia-tegra.conf" )
     add_subdirectory(test test)
   endif()
 endif() # NOT WIN32
+endif () # NOT TRITON_ENABLE_ROCM

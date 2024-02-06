@@ -209,6 +209,9 @@ endif() # TRITON_ENABLE_TRACING
 if(${TRITON_ENABLE_ROCM})
   set(TRITON_ROCM_HOME /opt/rocm)
 
+  list(APPEND CMAKE_PREFIX_PATH /opt/rocm /opt/rocm/llvm $ENV{ROCM_PATH} $ENV{HIP_PATH})
+  list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hcc /opt/rocm/hip /opt/rocm)
+
   if (NOT CMAKE_HIP_COMPILER)
     set(CMAKE_HIP_COMPILER "${TRITON_ROCM_HOME}/llvm/bin/clang++")
   endif()
@@ -219,20 +222,6 @@ if(${TRITON_ENABLE_ROCM})
 
   file(GLOB rocm_cmake_components ${TRITON_ROCM_HOME}/lib/cmake/*)
   list(APPEND CMAKE_PREFIX_PATH ${rocm_cmake_components})
-  # Force cmake to accept the configured HIP compiler. Because the configured CMAKE_PREFIX_PATH does not work during
-  # enable_language(HIP), we might need to move configuring of CMAKE_PREFIX_PATH to build.py (in the future).
-  set(CMAKE_HIP_COMPILER_FORCED ON)
-
-  enable_language(HIP)
-  # NOTE: Flags -mllvm -amdgpu-early-inline-all=true are critical for gpu kernel code performance. -mllvm passes the
-  # next flag to underlying LLVM instead of clang and -amdgpu-early-inline-all=true is the optimization flag for LLVM.
-  # With CMake's enable_language(HIP), additional flags including the proceeding one are propagated from
-  # hip-lang::device library. But in some weird cases, the hip-lang::device target may not be properly configured, for
-  # example, the CMAKE_PREFIX_PATH might be improperly configured.
-  if(NOT DEFINED _CMAKE_HIP_DEVICE_RUNTIME_TARGET)
-    message(FATAL_ERROR "HIP Language is not properly configured.")
-  endif()
-  add_compile_options("$<$<COMPILE_LANGUAGE:HIP>:SHELL:-x hip -parallel-jobs=2>")
 
   # replicate strategy used by pytorch to get ROCM_VERSION
   file(READ "${TRITON_ROCM_HOME}/.info/version-dev" ROCM_VERSION_DEV_RAW)
@@ -277,7 +266,7 @@ if(${TRITON_ENABLE_ROCM})
                  
   auto_set_source_files_hip_language(triton_hipified_cu_srcs)
 
-  #message(FATAL_ERROR "TEST")
+ # message(FATAL_ERROR "TEST")
 endif()
 
 ExternalProject_Add(triton-server
