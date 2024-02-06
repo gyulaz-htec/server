@@ -31,6 +31,8 @@
 #include "triton/backend/backend_model.h"
 #include "triton/backend/backend_model_instance.h"
 
+#include <hip/hip_runtime_api.h>
+
 namespace triton { namespace backend { namespace sequence {
 
 

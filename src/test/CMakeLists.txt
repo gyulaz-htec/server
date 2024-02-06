@@ -51,6 +51,23 @@ if(${TRITON_ENABLE_TENSORRT})
   )
 endif() # TRITON_ENABLE_TENSORRT
 
+#if(${TRITON_ENABLE_ROCM})
+#  add_executable(caffe2plan caffe2plan.cc)
+#  target_include_directories(caffe2plan PRIVATE ${CUDA_INCLUDE_DIRS})
+#  target_link_libraries(
+#    caffe2plan
+#    PRIVATE
+#      -lnvinfer
+#      -lnvcaffe_parser
+#      hip::host
+#  )
+#
+#  install(
+#    TARGETS caffe2plan
+#    RUNTIME DESTINATION bin
+#  )
+#endif() # TRITON_ENABLE_ROCM
+
 #
 # Unit test for DataCompressor
 #
@@ -108,7 +125,7 @@ if(${TRITON_ENABLE_GPU})
   add_subdirectory(sequence sequence)
 endif()
 
-if(${TRITON_ENABLE_ROCM})
-  add_subdirectory(sequence sequence)
-endif()
+#f(${TRITON_ENABLE_ROCM})
+#  add_subdirectory(sequence sequence)
+#endif()
 

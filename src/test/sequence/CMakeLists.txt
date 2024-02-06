@@ -43,12 +43,28 @@ add_library(
   TritonSequenceBackend::triton-sequence-backend ALIAS triton-sequence-backend
 )
 
+
 target_compile_features(triton-sequence-backend PRIVATE cxx_std_11)
+
+if (${TRITON_ENABLE_ROCM})
+target_compile_options(
+  triton-sequence-backend PRIVATE
+  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+    -Wall -Wextra -Wno-unused-parameter -Wno-type-limits>
+)
+
+target_link_libraries(
+  triton-sequence-backend
+  PUBLIC
+    hip::host
+)
+else()
 target_compile_options(
   triton-sequence-backend PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
     -Wall -Wextra -Wno-unused-parameter -Wno-type-limits -Werror>
 )
+endif()
 
 target_link_libraries(
   triton-sequence-backend
