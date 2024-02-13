@@ -82,6 +82,14 @@ if(${TRITON_ENABLE_HTTP} OR ${TRITON_ENABLE_METRICS} OR
   message(STATUS "Using libevent ${Libevent_VERSION}")
 endif()
 
+if(${TRITON_ENABLE_HTTP} OR ${TRITON_ENABLE_METRICS} OR
+    ${TRITON_ENABLE_SAGEMAKER} OR ${TRITON_ENABLE_VERTEX_AI})
+if(${TRITON_ENABLE_ROCM})
+  find_package(libevent-extra CONFIG REQUIRED)
+  message(STATUS "Using libevent-extra")
+endif()
+endif()
+
 # OpenTelemetry
 #
 if (NOT WIN32 AND ${TRITON_ENABLE_TRACING})
@@ -200,6 +208,7 @@ if(${TRITON_ENABLE_ROCM})
     main
     PRIVATE
       hip::host
+      event-extra
   )
 endif() # TRITON_ENABLE_ROCM
 
@@ -911,10 +920,10 @@ if (NOT WIN32)
 endif() # NOT WIN32
 
 # Currently unit tests do not build for windows...
-if (NOT TRITON_ENABLE_ROCM)
+#if (NOT TRITON_ENABLE_ROCM)
 if ( NOT WIN32) 
   if ( NOT EXISTS "/etc/ld.so.conf.d/nvidia-tegra.conf" )
     add_subdirectory(test test)
   endif()
 endif() # NOT WIN32
-endif () # NOT TRITON_ENABLE_ROCM
+#endif () # NOT TRITON_ENABLE_ROCM

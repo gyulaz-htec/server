@@ -1093,6 +1093,11 @@ RUN apt update && apt install -y gpg wget && \
         if FLAGS.enable_gpu or FLAGS.enable_rocm:
             df += install_dcgm_libraries(argmap["DCGM_VERSION"], target_machine())
 
+        if FLAGS.enable_rocm:
+            df += """
+RUN apt-get install -y libevent-extra-2.1-7   
+RUN dpkg -l | grep event          
+"""
     df += """
 ENV TRITON_SERVER_VERSION ${TRITON_VERSION}
 ENV NVIDIA_TRITON_SERVER_VERSION ${TRITON_CONTAINER_VERSION}
