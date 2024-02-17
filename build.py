@@ -325,8 +325,8 @@ class BuildScript:
             )
             self.cmd("}" if target_platform() == "windows" else "fi")
             self.cwd(subdir)
-            self.cmd(f"git fetch origin {tag}:tritonbuildref", check_exitcode=True)
-            self.cmd(f"git checkout tritonbuildref", check_exitcode=True)
+            #self.cmd(f"git fetch origin {tag}:tritonbuildref", check_exitcode=True)
+            #self.cmd(f"git checkout tritonbuildref", check_exitcode=True)
         else:
             self.cmd(
                 f"  git clone --recursive --single-branch --depth=1 -b {tag} {org}/{repo}.git {subdir};",
@@ -1276,13 +1276,18 @@ ENV TRITON_SERVER_GPU_ENABLED    {gpu_enabled}
 # non-root. Make sure that this user to given ID 1000. All server
 # artifacts copied below are assign to this user.
 ENV TRITON_SERVER_USER=triton-server
-RUN userdel tensorrt-server > /dev/null 2>&1 || true && \
+"""
+    if not enable_rocm:
+        df += """
+RUN userdel tensorrt-server > /dev/null 2>&1 || true &&\
     if ! id -u $TRITON_SERVER_USER > /dev/null 2>&1 ; then \
         useradd $TRITON_SERVER_USER; \
     fi && \
     [ `id -u $TRITON_SERVER_USER` -eq 1000 ] && \
     [ `id -g $TRITON_SERVER_USER` -eq 1000 ]
+"""
 
+    df += """
 # Ensure apt-get won't prompt for selecting options
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -1417,6 +1422,13 @@ RUN pip3 install torch==2.0.1 vllm=={}
 WORKDIR /opt/tritonserver
 RUN rm -fr /opt/tritonserver/*
 ENV NVIDIA_PRODUCT_NAME="Triton Server"
+    """
+    if enable_rocm:
+        df += """
+COPY docker/entrypoint.d/ /opt/rocm/entrypoint.d/
+"""
+    else:
+        df += """
 COPY docker/entrypoint.d/ /opt/nvidia/entrypoint.d/
 """
 
@@ -1428,6 +1440,13 @@ COPY docker/entrypoint.d/ /opt/nvidia/entrypoint.d/
 COPY docker/cpu_only/ /opt/nvidia/
 ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
 """
+
+    if not enable_rocm:
+        df += """
+COPY docker/cpu_only/ /opt/rocm/
+ENTRYPOINT ["/opt/rocm/rocm_entrypoint.sh"]
+"""
+
 
     df += """
 ENV NVIDIA_BUILD_ID {}
@@ -1582,12 +1601,14 @@ def create_build_dockerfiles(
     # since we are using PyTorch and TensorFlow containers that
     # are not CPU-only.
     if (
-        not FLAGS.enable_gpu
+        not FLAGS.enable_gpu and not FLAGS.enable_rocm
         and (("pytorch" in backends) or ("tensorflow" in backends))
         and (target_platform() != "windows")
     ):
         if "gpu-base" in images:
             gpu_base_image = images["gpu-base"]
+        elif FLAGS.enable_rocm:
+            gpu_base_image = "rocm/pytorch:rocm6.0_ubuntu22.04_py3.9_pytorch_2.0.1"
         else:
             gpu_base_image = "nvcr.io/nvidia/tritonserver:{}-py3-min".format(
                 FLAGS.upstream_container_version
