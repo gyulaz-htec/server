@@ -1230,11 +1230,19 @@ def dockerfile_prepare_container_linux(argmap, backends, enable_gpu, enable_rocm
     df = """
 ARG TRITON_VERSION
 ARG TRITON_CONTAINER_VERSION
-
 ENV TRITON_SERVER_VERSION ${TRITON_VERSION}
 ENV NVIDIA_TRITON_SERVER_VERSION ${TRITON_CONTAINER_VERSION}
+"""
+    if enable_rocm:
+        df += """
+LABEL com.amd.tritonserver.version="${TRITON_SERVER_VERSION}"
+    """
+    else:
+        df += """
 LABEL com.nvidia.tritonserver.version="${TRITON_SERVER_VERSION}"
+    """
 
+    df += """
 ENV PATH /opt/tritonserver/bin:${PATH}
 # Remove once https://github.com/openucx/ucx/pull/9148 is available
 # in the min container.
@@ -1579,7 +1587,7 @@ def create_build_dockerfiles(
             FLAGS.upstream_container_version
         )
     elif FLAGS.enable_rocm:
-        base_image = "rocm/pytorch:rocm6.0_ubuntu22.04_py3.9_pytorch_2.0.1"
+        base_image = "rocm/pytorch:rocm6.0.2_ubuntu22.04_py3.10_pytorch_2.1.2"
     else:
         base_image = "ubuntu:22.04"
 
@@ -1608,7 +1616,7 @@ def create_build_dockerfiles(
         if "gpu-base" in images:
             gpu_base_image = images["gpu-base"]
         elif FLAGS.enable_rocm:
-            gpu_base_image = "rocm/pytorch:rocm6.0_ubuntu22.04_py3.9_pytorch_2.0.1"
+            gpu_base_image = "rocm/pytorch:rocm6.0.2_ubuntu22.04_py3.10_pytorch_2.1.2"
         else:
             gpu_base_image = "nvcr.io/nvidia/tritonserver:{}-py3-min".format(
                 FLAGS.upstream_container_version
