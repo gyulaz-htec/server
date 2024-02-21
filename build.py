@@ -2871,6 +2871,18 @@ if __name__ == "__main__":
                     script_install_dir,
                     github_organization,
                 )
+            elif be == "onnxruntime" and FLAGS.enable_rocm:
+                backend_build(
+                    be,
+                    cmake_script,
+                    "add_migraphx_rocm_onnxrt_eps",
+                    script_build_dir,
+                    script_install_dir,
+                    "https://github.com/TedThemistokleous",
+                    images,
+                    components,
+                    library_paths,
+                )
             else:
                 backend_build(
                     be,
