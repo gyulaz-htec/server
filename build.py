@@ -79,8 +79,8 @@ TRITON_VERSION_MAP = {
         "2.4.7",  # DCGM version
         "py310_23.1.0-1",  # Conda version
         "0.2.1",  # vLLM version
-        "6.0", #ROCm Version
-        "rocm-6.0.0", #MIGraphX Version Tags
+        "6.0.2", #ROCm Version
+        "develop", #MIGraphX Version Tags
     )
 }
 
@@ -287,8 +287,9 @@ class BuildScript:
     def cmake(self, args):
         # Pass some additional envvars into cmake...
         env_args = []
-        for k in ("TRT_VERSION", "CMAKE_TOOLCHAIN_FILE", "VCPKG_TARGET_TRIPLET"):
-            env_args += [f'"-D{k}={self.envvar_ref(k)}"']
+
+        #for k in ("TRT_VERSION", "CMAKE_TOOLCHAIN_FILE", "VCPKG_TARGET_TRIPLET"):
+        #    env_args += [f'"-D{k}={self.envvar_ref(k)}"']
         self.cmd(f'cmake {" ".join(env_args)} {" ".join(args)}', check_exitcode=True)
 
     def makeinstall(self, target="install"):
@@ -1443,18 +1444,11 @@ COPY docker/entrypoint.d/ /opt/nvidia/entrypoint.d/
     # The CPU-only build uses ubuntu as the base image, and so the
     # entrypoint files are not available in /opt/nvidia in the base
     # image, so we must provide them ourselves.
-    if not enable_gpu:
+    if not enable_gpu and not enable_rocm:
         df += """
 COPY docker/cpu_only/ /opt/nvidia/
 ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
 """
-
-    if not enable_rocm:
-        df += """
-COPY docker/cpu_only/ /opt/rocm/
-ENTRYPOINT ["/opt/rocm/rocm_entrypoint.sh"]
-"""
-
 
     df += """
 ENV NVIDIA_BUILD_ID {}
