@@ -329,8 +329,12 @@ class BuildScript:
             #self.cmd(f"git fetch origin {tag}:tritonbuildref", check_exitcode=True)
             #self.cmd(f"git checkout tritonbuildref", check_exitcode=True)
         else:
+            print(f"  git clone --recursive --single-branch --depth=1 -b {tag} {org}/{repo}.git {subdir};")
+            branch = f"-b {tag}"
+            if(len(tag) == 0):
+                branch = ""
             self.cmd(
-                f"  git clone --recursive --single-branch --depth=1 -b {tag} {org}/{repo}.git {subdir};",
+                f"  git clone --recursive --single-branch --depth=1 {branch} {org}/{repo}.git {subdir};",
                 check_exitcode=True,
             )
             self.cmd("}" if target_platform() == "windows" else "fi")
@@ -1908,8 +1912,8 @@ def backend_build(
     components,
     library_paths,
 ):
-    repo_build_dir = os.path.join(build_dir, be, "build")
-    repo_install_dir = os.path.join(build_dir, be, "install")
+    repo_build_dir = os.path.join(build_dir, backend_repo(be), "build")
+    repo_install_dir = os.path.join(build_dir, backend_repo(be), "install")
 
     cmake_script.commentln(8)
     cmake_script.comment(f"'{be}' backend")
@@ -1932,7 +1936,12 @@ def backend_build(
         cmake_script.cmd("cd ..")
         tensorrtllm_prebuild(cmake_script)
     else:
-        cmake_script.gitclone(backend_repo(be), tag, be, github_organization)
+        cmake_script.gitclone(backend_repo(be), tag, backend_repo(be), github_organization)
+
+    cmake_script.comment("Clone onnxruntime itself.  includes directory is needed for rocm")
+    cmake_script.gitclone(be, "", be, "https://github.com/microsoft")
+    # cmake_script.cmake (("-DCMAKE_INSTALL_PREFIX:PATH=/opt/tritonserver/backends/onnxruntime/install" ,"-DTRITON_BUILD_ONNXRUNTIME_VERSION=1.14.1", "-DTRITON_BUILD_CONTAINER_VERSION=23.04", ".."))
+    cmake_script.comment()
 
     cmake_script.mkdir(repo_build_dir)
     cmake_script.cwd(repo_build_dir)
