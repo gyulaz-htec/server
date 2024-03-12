@@ -329,7 +329,6 @@ class BuildScript:
             #self.cmd(f"git fetch origin {tag}:tritonbuildref", check_exitcode=True)
             #self.cmd(f"git checkout tritonbuildref", check_exitcode=True)
         else:
-            print(f"  git clone --recursive --single-branch --depth=1 -b {tag} {org}/{repo}.git {subdir};")
             branch = f"-b {tag}"
             if(len(tag) == 0):
                 branch = ""
@@ -2135,7 +2134,7 @@ def cibase_build(
     # The onnxruntime_backend build produces some artifacts that
     # are needed for CI testing.
     if "onnxruntime" in backends:
-        ort_install_dir = os.path.join(build_dir, "onnxruntime", "install")
+        ort_install_dir = os.path.join(build_dir, "onnxruntime_backend", "install")
         cmake_script.mkdir(os.path.join(ci_dir, "qa", "L0_custom_ops"))
         cmake_script.cp(
             os.path.join(ort_install_dir, "test", "libcustom_op_library.so"),
@@ -2146,7 +2145,7 @@ def cibase_build(
             os.path.join(ci_dir, "qa", "L0_custom_ops"),
         )
         # [WIP] other way than wildcard?
-        backend_tests = os.path.join(build_dir, "onnxruntime", "test", "*")
+        backend_tests = os.path.join(build_dir, "onnxruntime_backend", "test", "*")
         cmake_script.cpdir(backend_tests, os.path.join(ci_dir, "qa"))
 
     # Need the build area for some backends so that they can be
