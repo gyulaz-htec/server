@@ -73,7 +73,7 @@ TRITON_VERSION_MAP = {
     "2.39.0": (
         "23.10",  # triton container
         "23.10",  # upstream container
-        "main",  # ORT
+        "rel-1.17.2",  # ORT
         "2023.0.0",  # ORT OpenVINO
         "2023.0.0",  # Standalone OpenVINO
         "2.4.7",  # DCGM version
@@ -665,6 +665,7 @@ def pytorch_cmake_args(images):
 
 
 def onnxruntime_cmake_args(images, library_paths):
+    print("onnxruntime branch ", TRITON_VERSION_MAP[FLAGS.version][2])
     cargs = [
         cmake_backend_arg(
             "onnxruntime",
@@ -2300,6 +2301,18 @@ if __name__ == "__main__":
         help="Do not use Docker --pull argument when building container.",
     )
     parser.add_argument(
+        "--ort_organization",
+        default="https://github.com/microsoft/onnxruntime",
+        required=False,
+        help="github path for onnxruntime.  Use this if developing on a separate fork etc.",
+    )
+    parser.add_argument(
+        "--ort_branch",
+        default="main",
+        required=False,
+        help="github branch for onnxruntime.  Use this if developing on a separate branch etc.  See also --extra-backend-cmake-arg and --override-backend-cmake-arg",
+    )
+    parser.add_argument(
         "--container-memory",
         default=None,
         required=False,
@@ -2874,13 +2887,14 @@ if __name__ == "__main__":
                     github_organization,
                 )
             elif be == "onnxruntime" and FLAGS.enable_rocm:
+                # pull the branch of onnxruntime we're working on
                 backend_build(
                     be,
                     cmake_script,
-                    "add_migraphx_rocm_onnxrt_eps",
+                    FLAGS.ort_branch,
                     script_build_dir,
                     script_install_dir,
-                    "https://github.com/TedThemistokleous",
+                    FLAGS.ort_organization,
                     images,
                     components,
                     library_paths,
