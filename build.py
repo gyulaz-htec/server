@@ -1950,17 +1950,15 @@ def backend_build(
     if FLAGS.enable_rocm:
         cmake_script.comment("nano for development, cuda for hipify")
         # cmake_script.cmd("apt install -y cuda nano")
-        # cmake_script.cmd("apt install -y cuda nano")
 
         cmake_script.comment("")
         cmake_script.comment("Find all the source files containing string \"cuda\", and hipify")
-        cmake_script.cmd("grep -il cuda `find .. -name *.cc` > cudafiles.txt")
-        cmake_script.cmd("grep -il cuda `find .. -name *.h` >> cudafiles.txt")
+        cmake_script.comment("the \"|| echo...\" prevents exiting the script if grep finds nothing")
+        cmake_script.cmd("grep -il cuda `find .. -name *.cc` > cudafiles.txt  || echo \"\"")
+        cmake_script.cmd("grep -il cuda `find .. -name *.h` >> cudafiles.txt || echo \"\"")
     
-        cmake_script.cmd("date &&  hipify-perl -inplace `cat cudafiles.txt ` && date")
-        cmake_script.comment("sed substitution for errors in lines 1953 and 2327 of /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
-        cmake_script.cmd("// sed -i \"s/static_cast<void>(hipStreamSynchronize(static_cast<hipStream_t>(CudaStream())));/(void) hipStreamSynchronize(static_cast<ihipStream_t *>(CudaStream()));/\" /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
-
+        cmake_script.cmd("date && hipify-perl -inplace `cat cudafiles.txt ` && date")
+        cmake_script.comment("sed substitution for errors in /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
 
         cmake_script.cmd("sed -i \"s/CudaStream()/static_cast<hipStream_t>(CudaStream())/\" /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
 
