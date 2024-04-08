@@ -582,6 +582,8 @@ def backend_cmake_args(images, components, be, install_dir, library_paths):
     else:
         args = []
 
+    # TRITON_BACKEND_REPO_TAG represents not the onnxruntime_backend repo, 
+    # but the backend repo at git@github.com:TedThemistokleous/backend.git
     cargs = args + [
         cmake_backend_arg(be, "CMAKE_BUILD_TYPE", None, cmake_build_type),
         cmake_backend_arg(be, "CMAKE_INSTALL_PREFIX", "PATH", install_dir),
@@ -1938,13 +1940,31 @@ def backend_build(
     else:
         cmake_script.gitclone(backend_repo(be), tag, backend_repo(be), github_organization)
 
-    cmake_script.comment("Clone onnxruntime itself.  includes directory is needed for rocm")
-    cmake_script.gitclone(be, "", be, "https://github.com/microsoft")
-    # cmake_script.cmake (("-DCMAKE_INSTALL_PREFIX:PATH=/opt/tritonserver/backends/onnxruntime/install" ,"-DTRITON_BUILD_ONNXRUNTIME_VERSION=1.14.1", "-DTRITON_BUILD_CONTAINER_VERSION=23.04", ".."))
-    cmake_script.comment()
+    if FLAGS.enable_rocm:
+        cmake_script.comment("Clone onnxruntime itself.  includes directory is needed for rocm")
+        cmake_script.gitclone(be, "", be, "https://github.com/microsoft")
+        # cmake_script.cmake (("-DCMAKE_INSTALL_PREFIX:PATH=/opt/tritonserver/backends/onnxruntime/install" ,"-DTRITON_BUILD_ONNXRUNTIME_VERSION=1.14.1", "-DTRITON_BUILD_CONTAINER_VERSION=23.04", ".."))
 
     cmake_script.mkdir(repo_build_dir)
     cmake_script.cwd(repo_build_dir)
+    if FLAGS.enable_rocm:
+        cmake_script.comment("nano for development, cuda for hipify")
+        # cmake_script.cmd("apt install -y cuda nano")
+        # cmake_script.cmd("apt install -y cuda nano")
+
+        cmake_script.comment("")
+        cmake_script.comment("Find all the source files containing string \"cuda\", and hipify")
+        cmake_script.cmd("grep -il cuda `find .. -name *.cc` > cudafiles.txt")
+        cmake_script.cmd("grep -il cuda `find .. -name *.h` >> cudafiles.txt")
+    
+        cmake_script.cmd("date &&  hipify-perl -inplace `cat cudafiles.txt ` && date")
+        cmake_script.comment("sed substitution for errors in lines 1953 and 2327 of /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
+        cmake_script.cmd("// sed -i \"s/static_cast<void>(hipStreamSynchronize(static_cast<hipStream_t>(CudaStream())));/(void) hipStreamSynchronize(static_cast<ihipStream_t *>(CudaStream()));/\" /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
+
+
+        cmake_script.cmd("sed -i \"s/CudaStream()/static_cast<hipStream_t>(CudaStream())/\" /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
+
+        cmake_script.comment()
     cmake_script.cmake(
         backend_cmake_args(images, components, be, repo_install_dir, library_paths)
     )
@@ -2800,7 +2820,7 @@ if __name__ == "__main__":
     components = {
         "common": default_repo_tag,
         "core": default_repo_tag,
-        "backend": default_repo_tag,
+        "backend": "add_migraphx_rocm_eps_hipify",
         "thirdparty": default_repo_tag,
     }
     for be in FLAGS.repo_tag:
