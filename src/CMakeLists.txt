@@ -52,7 +52,7 @@ FetchContent_Declare(
   repo-backend
   # Workaround to make tritonserver binary build
   # GIT_REPOSITORY https://github.com/triton-inference-server/backend.git
-  GIT_REPOSITORY https://github.com/TedThemistokleous/backend.git
+  GIT_REPOSITORY https://github.com/gyulaz-htec/backend.git
   GIT_TAG ${TRITON_BACKEND_REPO_TAG}
 )
 
