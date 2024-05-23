@@ -2817,7 +2817,7 @@ if __name__ == "__main__":
     # Initialize map of common components and repo-tag for each.
     components = {
         "common": default_repo_tag,
-        "core": default_repo_tag,
+        "core": "add_migraphx_rocm_eps_hipify",
         "backend": "add_migraphx_rocm_eps_hipify",
         "thirdparty": default_repo_tag,
     }
