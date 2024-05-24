@@ -479,6 +479,7 @@ def core_cmake_args(components, backends, cmake_dir, install_dir):
     )
 
     cargs.append(cmake_core_enable("TRITON_ENABLE_MALI_GPU", FLAGS.enable_mali_gpu))
+    cargs.append(cmake_core_enable("TRITON_ENABLE_ROCM", FLAGS.enable_rocm))
 
     cargs.append(cmake_core_enable("TRITON_ENABLE_GRPC", "grpc" in FLAGS.endpoint))
     cargs.append(cmake_core_enable("TRITON_ENABLE_HTTP", "http" in FLAGS.endpoint))
