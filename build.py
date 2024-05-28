@@ -479,7 +479,6 @@ def core_cmake_args(components, backends, cmake_dir, install_dir):
     )
 
     cargs.append(cmake_core_enable("TRITON_ENABLE_MALI_GPU", FLAGS.enable_mali_gpu))
-    cargs.append(cmake_core_enable("TRITON_ENABLE_ROCM", FLAGS.enable_rocm))
 
     cargs.append(cmake_core_enable("TRITON_ENABLE_GRPC", "grpc" in FLAGS.endpoint))
     cargs.append(cmake_core_enable("TRITON_ENABLE_HTTP", "http" in FLAGS.endpoint))
@@ -1961,7 +1960,7 @@ def backend_build(
         cmake_script.cmd("date && hipify-perl -inplace `cat cudafiles.txt ` && date")
         cmake_script.comment("sed substitution for errors in /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
 
-        cmake_script.cmd("sed -i \"s/CudaStream()/static_cast<hipStream_t>(CudaStream())/\" /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
+        cmake_script.cmd("sed -i \"s/CudaStream()/RocmStream()/\" /tmp/tritonbuild/onnxruntime_backend/src/onnxruntime.cc")
 
         cmake_script.comment()
     cmake_script.cmake(
