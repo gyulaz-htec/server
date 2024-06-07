@@ -2819,7 +2819,7 @@ if __name__ == "__main__":
         "common": default_repo_tag,
         "core": "add_migraphx_rocm_eps_hipify",
         "backend": "add_migraphx_rocm_eps_hipify",
-        "thirdparty": default_repo_tag,
+        "thirdparty": "add_migraphx_rocm_eps_hipify",
     }
     for be in FLAGS.repo_tag:
         parts = be.split(":")
